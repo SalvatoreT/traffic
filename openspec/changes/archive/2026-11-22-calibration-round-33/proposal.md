@@ -1,3 +1,5 @@
+> Round 33 ran on 2026-11-16 (`data/calibration/rockridge.record-archive-*.md`). Archived late, on 2026-11-22; its requirements were merged into the specs by hand first, so the archive ran with --skip-specs.
+
 ## Why
 
 After round 32 one junction type stands between the model and an accepted delay-feedback fit. At iteration 2 of that fit all four through-car blocks and all four headline shares are in range, and the fit fails only its removal rule (3.3 an hour). About half of those removals sit at Ashby Ave / Claremont Ave and on the hillside streets queued behind it, where the northbound Claremont Ave approach carries 314 of its 577 counted vehicles. Validation case l1 (a left-turn pocket that overflows every cycle) fails. This round checks left turns at signals as primitives first, then the phasing at Ashby Ave / Claremont Ave, and then redoes the fit.

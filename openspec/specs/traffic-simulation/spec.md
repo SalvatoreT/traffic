@@ -597,3 +597,10 @@ In the direction with the larger approach flow, the downstream signal's green fo
 #### Scenario: SR-24 interchange on Telegraph Ave
 - **WHEN** southbound carries more than northbound through the signals at Aileen St, 56th St and 55th St, 87 to 94 m apart
 - **THEN** the southbound greens start in turn, each one travel time after the one upstream
+
+### Requirement: An observed phase can come without timing
+An observed signal timing MAY give the phasing alone: an approach in a phase of its own with no cycle and no green (both 0). The plan SHALL keep that phase structure and take its cycle and greens from the flows by Webster's method [Webster1958]. The area config SHALL accept such an observation only with `ownPhase` and with both `cycleSeconds` and `greenSeconds` left out.
+
+#### Scenario: Protected left seen in the field
+- **WHEN** a field observation says an approach has a left-turn arrow and no timing sheet exists
+- **THEN** the approach runs in a phase of its own, its left turns meet no opposing flow, and the cycle stays within 75 to 120 s
