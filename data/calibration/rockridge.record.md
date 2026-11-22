@@ -89,6 +89,64 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Fifty-fourth round: control delay charged once in the router (fails the stage 1 bar, not adopted, code not merged) (2026-11-21)
+
+Fails the stage 1 bar in both periods. Stage 2 never ran. Not adopted. The published model stays round 52: network 53c823f20d9165ed, demand 2d16d8f8eb0950ca, cross-validation demand e1a9d4bd50539355 (the training view built by the derived-targets job), config 2405ff02c92b2837, now scored under the derived-targets scope. Second failed round in a row after round 53. No user decision was involved except the lead for round 55 below. The change is archived with its evidence in `openspec/changes/archive/2026-11-22-calibration-round-54/` (laptop stage 1 evidence at ed612b6 on the development branch, run from 1334fec). The numbers below were checked against the stage 1 score files.
+
+### What was tried
+
+The router charges the control delay of a junction twice once a link is measured: the link's measured time already holds the signal or stop wait, and the movement cost adds the control constant (`crates/sim/data/node-delays.json`) again. The option `single_control_charge` (off by default) charges it once, as the demand fit's static assignment does. The target was the five diagonal stations in the PM peak, which carry 349 veh/h in the simulator against 178 counted. The design wrote the bar before any run (D2): the diagonal sum falls by more than twice its standard error, no judged pass count falls by more than 1, Colby St NB whole street stays inside GEH 5, and Telegraph travel times do not leave their observed range.
+
+### Run
+
+Laptop, 2026-11-21 evening Pacific. Ten seeds (1 to 10), PM and AM, shipped and cross-validation demand, option off and on; simulator 54d3481e9681cd76489a3ff7611a6ebc. With the option off, all 40 seed reports reproduced the derived-targets assessment exactly (only the fingerprint and revision stamps and the path of the demand file differ). The first run wrote PM and AM into the same folders, so the AM runs deleted the PM seed reports; the scripts now keep one folder per period (`laptop-fixes.diff`), and the second run reproduced the first run's scores byte for byte.
+
+### Stage 1, PM, option off to on
+
+| Line | Off | On | Counted or observed |
+| --- | --- | --- | --- |
+| Diagonal sum (five stations, veh/h, mean +- standard error) | 349.2 +- 20.0 | 344.1 +- 22.4 | 178 |
+| Judged recent fitted / held out | 79 of 89 / 15 of 18 | 79 of 89 / 14 of 18 | |
+| Judged older fitted | 59 of 87 | 48 of 87 | |
+| All fitted | 138 of 176 | 127 of 176 | |
+| Colby St NB whole street (veh/h) | 86 | 83 (GEH 2.0, met) | 102 |
+| Colby St SB whole street (veh/h) | 75 | 65 | 39 |
+| Telegraph Ave SB travel time (s) | 400 | 461 | 300 to 376 |
+| D5 shares within 10 points; mean error | 4 of 4; 3.8 | 4 of 4; 4.3 | |
+| Cars cleared from gridlock per hour | 5.9 | 7.0 | |
+
+The diagonal sum falls by 5.1 against a standard error of the difference of 30.0; the bar needed more than twice that. Older fitted falls by 11, where the bar allowed 1. Telegraph SB was 24 s outside its range and is 85 s outside. Whole street is 4 of 4 both ways.
+
+### Stage 1, AM, option off to on
+
+Recent fitted 72 of 77 to 70 of 77; recent held out 15 of 19 to 15 of 19. D5 4 of 4 both ways (mean error 4.0 to 4.4). Whole street 4 of 4. The diagonal blocks did fall: McAuley St EB 28.9 to 18.8 (4 counted), 60th St EB 29.2 to 23.5 (6), Forest Ave EB 61.6 to 42.7 (50), Ayala Ave NB 47.5 to 37.8 (50). Telegraph SB travel time 290 s to 315 s against 245 to 285.
+
+### Lesson: single-seed diagnostics on these stations
+
+The figures that motivated the round did not hold. On seed 1 in the cloud container the diagonal sum went from 456 to 306 with the option on, and the older router diagnosis gave 901 to 767 on one seed. Over ten seeds the fall is 5 veh/h, inside the seed spread (the ten-seed sum has a standard error of 20). A single seed cannot show the direction on these stations, and a diagnostic of this kind needs ten seeds before it motivates a round.
+
+### Validation case l1
+
+With the default flipped, case l1 (saturated signalized approach, 2 lanes, 20% left) would move from 675.90 to 687.15 veh/h/lane against a top of 680.79, which is 0.7 standard errors of the difference. The mechanism is a rise in the share of left-turners who detour (101 to 130 of about 1,010 trips over seeds 1 to 10). The other 73 cases are identical. No deviation was reviewed or changed.
+
+### Why the simulator code is not merged
+
+The router option lives in `crates/sim`, and the simulator fingerprint hashes every `.rs` source. Merging even the off-by-default option would change the published fingerprint from 6b886c8f52ee07397773ddd0ebbcb447 to 54d3481e9681cd76489a3ff7611a6ebc and force a full rerun of the published set for no gain. The code stays on the branch `calibration-round-54` (head 1334fec), which is kept. This is the project's rule that a failed candidate switches off, applied to a simulator change. The spec delta was not synced into `openspec/specs`, and `tools/diag/control-charge-score.ts` stays on the branch. The published data and fingerprint are unchanged.
+
+### Verdict
+
+Bar D2 not met in either period (PM: diagonal fall, judged older fitted, Telegraph SB; AM: judged recent fitted falls by 2, Telegraph SB and Shattuck SB leave range). Not adopted; published model stays round 52.
+
+### Lead for round 55 (project lead's decision)
+
+The simulator overshoots the demand fit on the diagonal blocks even where they are fitted, and the membership loop has never met its stop rule (three passes in each run; the PM flow change per seed standard error was 3.65, then 1.46 in the latest run, against a threshold of 1). Round 55 iterates the loop to convergence before anything else is tried.
+
+Three field observations remain open:
+
+- The green and the cycle of the Forest St approach at the Claremont, Colby and Forest signal.
+- The stop control for eastbound 62nd St at Canning St.
+- The Howell St and Ayala Ave barricade.
+
 ## Fifty-third round: end-along targets and seeded pairs (fails the keep rule on the headline shares, not adopted) (2026-11-21)
 
 Fails the keep rule on one line, the D5 headline shares (3 of 4 within 10 points, mean error 6.2 against 3.8), and the improvement test. Not adopted. The published model stays round 52: network 53c823f20d9165ed, demand 2d16d8f8eb0950ca, cross-validation demand 1c3b1666f24156f1, config 2405ff02c92b2837. Simulator fingerprint 6b886c8f52ee07397773ddd0ebbcb447 throughout. No user decision was involved. The change is archived with its evidence in `openspec/changes/archive/2026-11-21-calibration-round-53/` (laptop evidence commit 93899cf, run at 2fdd5f7). The numbers below come from the laptop's report and were checked against the evidence files.
