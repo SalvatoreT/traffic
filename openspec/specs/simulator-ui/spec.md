@@ -1116,3 +1116,43 @@ The list SHALL be a table with a caption and column and row headers, inside a sc
 #### Scenario: Phone
 - **WHEN** the section is shown at 390 px
 - **THEN** the table scrolls inside its own region, which the keyboard can reach and scroll, and the page has no horizontal scroll
+
+### Requirement: Safety summaries preserve endpoints and exposure
+Every safety summary SHALL keep pedestrian AIS4+ and cyclist MAIS3+ scores separate, state their endpoint and denominator, and identify unavailable or unsupported samples [Tefft2013, Lubbe2022]. It SHALL NOT add these means into a combined injury-risk score. Generated prose and headless result descriptions SHALL use the same meanings as the UI. Legacy scores SHALL be explicitly identified or recomputed when the safety contract changes.
+
+#### Scenario: Modes change in different directions
+- **WHEN** the pedestrian mean rises and the cyclist mean falls
+- **THEN** the summary reports each mode's change with its own endpoint and support
+- **AND** no arithmetic sum hides either change behind one combined verdict
+
+#### Scenario: Equal means with different exposure
+- **WHEN** baseline and scenario have equal mean severity but different encounter counts
+- **THEN** both mean and count are visible
+- **AND** the summary does not imply that equal per-encounter severity establishes equal total harm
+
+#### Scenario: Stored safety result has an old meaning
+- **WHEN** a stored result predates the current severity input or endpoint contract
+- **THEN** the application rejects it for current safety comparisons or explicitly identifies its legacy meaning
+- **AND** it does not relabel the old value as a newly defined measure
+
+### Requirement: A closure exposes an accessible redistribution view
+An intervention or proposal SHALL expose baseline, closure-only, and package redistribution. Labels and non-color cues SHALL distinguish possible bypasses, observed cohort routes, and net all-car changes. A keyboard-accessible table SHALL match the map's evidence, retaining direction, period, geographic scope, and relevant detours beyond the viewport. Incomplete, unmatched, unavailable, capped, or unhealthy evidence SHALL remain visible and never imply zero diversion.
+
+#### Scenario: Inspecting Colby and North
+- **WHEN** a user inspects a closure at Colby/North
+- **THEN** the user can inspect legal paths via 63rd/Dana, recorded usage if available, baseline and scenario block counts, and the closure-only versus complete-package comparison without conflating those evidence types
+
+#### Scenario: Reading without the map or colors
+- **WHEN** a user navigates by keyboard or screen reader or cannot distinguish map colors
+- **THEN** the table and labels provide the same counts, signs, scenario identities, route evidence types, and coverage limitations
+
+### Requirement: All-car effects accompany through-traffic summaries
+Redistribution and proposal entry points SHALL show absolute all-car counts and signed changes alongside through-traffic effects. Passage classes SHALL consistently distinguish external-to-external trips from trips with an endpoint inside the area, or be marked unavailable while retaining all-car totals. Raw effects SHALL retain existing paired uncertainty and evidence status, including unresolved increases.
+
+#### Scenario: Through traffic falls while total traffic rises
+- **WHEN** a proposal reduces through-car counts but raises all-car counts on 63rd or Dana
+- **THEN** both changes are visible and the through-traffic improvement does not stand in for the total traffic effect
+
+#### Scenario: Boundary traffic has no neighborhood through metric
+- **WHEN** a boundary link carries external-to-external cars but its existing neighborhood through counter is inapplicable
+- **THEN** the UI shows valid origin/destination passage classes or marks the decomposition unavailable, and never relabels those cars local merely because the existing through counter is zero

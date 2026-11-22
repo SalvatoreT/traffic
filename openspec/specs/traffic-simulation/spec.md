@@ -121,11 +121,32 @@ The simulation SHALL model pedestrians walking beside links and crossing at inte
 - **THEN** the pedestrian waits and crosses during the phase parallel to the crossing
 
 ### Requirement: Safety metrics for people walking and biking
-The simulation SHALL report conflicts between cars and pedestrians or cyclists by post-encroachment time [Hayward1972, Mahmud2017], close passes of cyclists, and an injury-risk index from vehicle speed at each encounter ([Tefft2013] for pedestrians, [Lubbe2022] for cyclists), labeled as surrogate indicators.
+The simulation SHALL report conflicts between cars and pedestrians or cyclists by post-encroachment time [Hayward1972, Mahmud2017] and close passes of cyclists as surrogate indicators. Each source-based injury severity score SHALL identify its injury endpoint, speed definition, population assumptions, and supported encounter geometry. Pedestrian and cyclist endpoints SHALL remain separate [Tefft2013, Lubbe2022]. A cyclist severity score using [Lubbe2022] SHALL use source-compatible relative kinematics; an encounter outside the source's supported geometry SHALL have an explicit unsupported severity status. The output SHALL include total and supported encounter counts and mean severity for each mode. An empty supported sample SHALL produce an unavailable mean with a reason. These conditional severity scores SHALL NOT be represented as crash probabilities or expected injuries.
 
 #### Scenario: Slower traffic past a crossing
-- **WHEN** an intervention lowers vehicle speeds at a crossing that pedestrians use
-- **THEN** the pedestrian injury-risk index falls
+- **WHEN** supported pedestrian encounters have identical exposure and geometry but lower impact-speed proxy values
+- **THEN** their per-encounter score follows the declared [Tefft2013] curve and its disclosed interpolation rule
+- **AND** the output continues to identify the value as a conditional severity surrogate
+
+#### Scenario: Cyclist velocity changes
+- **WHEN** two supported cyclist encounters have the same car velocity and different cyclist velocities
+- **THEN** their source-compatible closing-speed inputs are calculated from both participants according to the documented [Lubbe2022] definition
+- **AND** the scorer does not substitute car speed for closing speed
+
+#### Scenario: Unsupported passing geometry
+- **WHEN** an encounter's geometry is outside the adopted injury source's scope
+- **THEN** the output records the encounter and its unsupported severity status
+- **AND** it does not present a source-based injury score for that encounter
+
+#### Scenario: No supported encounters
+- **WHEN** a mode has no supported encounters during a run
+- **THEN** its encounter count and support status are reported and its mean severity is unavailable
+- **AND** the output does not report a measured zero severity
+
+#### Scenario: Exposure changes without severity changes
+- **WHEN** an encounter sample is duplicated without changing its individual scores
+- **THEN** its count doubles and its mean stays unchanged
+- **AND** both values remain available to reporting clients
 
 ### Requirement: Per-mode performance metrics
 The simulation SHALL report agents in the network, completed trips and mean trip time per mode and mean pedestrian crossing delay, while existing aggregate metrics continue to count cars only.
@@ -622,3 +643,70 @@ A link marked `noPocket` SHALL get no class-rule left-turn pocket, so its left-t
 #### Scenario: Worksheet lane coding
 - **WHEN** a signalized secondary approach is marked `noPocket`
 - **THEN** it has only its tagged lanes and no pocket lane
+
+### Requirement: Executed signal duration matches its declared plan
+For every accepted signal plan, the sum of phase greens and applicable clearance intervals SHALL equal the declared executed cycle within numerical tolerance. The simulator SHALL validate this invariant on initialization and adaptation. Observed timings SHALL distinguish source durations from derived durations and retain source provenance [FHWA-STM2008].
+
+#### Scenario: Incompatible fixed observations
+- **WHEN** an observed two-phase plan declares a 50-second cycle, fixed greens of 29 and 13 seconds, and five seconds of clearance after each phase
+- **THEN** the plan is rejected with a diagnostic showing the 52-second required budget and its source, rather than executing it as a matching 50-second observation
+
+#### Scenario: Observed timing fits
+- **WHEN** observed greens, free-phase allocations, and clearances fit the declared cycle
+- **THEN** the plan executes that cycle and preserves the accepted observed green durations
+
+#### Scenario: Observation-specific clearance
+- **WHEN** verified observation-specific clearance durations are supported and provided
+- **THEN** allocation and validation use those durations consistently and retain their source rather than substituting global defaults
+
+#### Scenario: An invalid plan reaches an output surface
+- **WHEN** signal validation rejects a plan during setup or adaptation
+- **THEN** the native and browser-facing callers receive its node, period, declared cycle, required budget, and observation source where available, and suppress results that would imply that plan was executed successfully
+
+### Requirement: A local trip has distinct physical endpoints
+The simulator SHALL store distinct origin and destination positions for local trips and SHALL use the same positions for insertion, placement, completion and measurement. The sampling policy SHALL distinguish endpoint roles, remain deterministic for the seed and trip, and define how a legal directed route connects the positions. The policy SHALL be documented as an assumption unless supported by observations.
+
+#### Scenario: One-link local trip
+- **WHEN** a local trip is assigned distinct physical endpoints on one directed link
+- **THEN** it drives the distance between them before completion and contributes that distance to the relevant exposure counters
+
+#### Scenario: Exit behind the entry
+- **WHEN** sampled endpoints cannot be served in their order on a directed link
+- **THEN** the simulator follows its documented legal placement or routing policy and never completes the trip at its origin merely because the exit lies behind it
+
+#### Scenario: Repeated and paired runs
+- **WHEN** a run is reset or a paired scenario uses the same trip and available endpoint links
+- **THEN** the physical endpoints are reproducible and remain the same requested locations
+
+### Requirement: Trip delay uses the distance actually traversed
+A trip's free-flow reference SHALL use the actual first and last link portions, the applicable driver compliance speed, and only the humps and node movements the trip traverses. The implementation SHALL expose enough information in tests or diagnostics to reconcile the reference with the trip path. Negative values caused by accounting errors SHALL NOT be hidden by clamping the result.
+
+#### Scenario: Partial first and last links
+- **WHEN** a local trip traverses only portions of its first and last links
+- **THEN** the free-flow reference excludes the untraversed portions and agrees with the documented reference calculation within the integrator's stated numerical tolerance [Treiber2015]
+
+#### Scenario: Hump outside the trip
+- **WHEN** a hump lies before the trip's entry or beyond its exit on an endpoint link
+- **THEN** that hump contributes no free-flow penalty to the trip
+
+### Requirement: Trip event timestamps are causal
+For every mode, the simulator SHALL preserve requested arrival time less than or equal to insertion time less than or equal to completion time. It SHALL use a documented convention for events within its fixed step and SHALL include waiting to enter in the trip-time definition when that definition starts at requested arrival.
+
+#### Scenario: Arrival inside a simulation step
+- **WHEN** a request arrives strictly between the start and end of a simulation step and can finish within that step
+- **THEN** its completion time is no earlier than its arrival time and its measured duration is nonnegative
+
+#### Scenario: Queue before insertion
+- **WHEN** a trip waits for entry space
+- **THEN** its requested arrival time is retained and its waiting time is counted once according to the documented trip-time definition
+
+### Requirement: Terminal motion contributes to exposure
+The simulator SHALL account for a vehicle's actual terminal distance and time before removing it from a link or completing its trip. Node transfers SHALL count each traveled portion once. The recorded terminal position SHALL be bounded by the physical exit position, with numerical tolerances documented for the ballistic integration [Treiber2015].
+
+#### Scenario: Local completion within a step
+- **WHEN** a vehicle reaches its local destination during a step
+- **THEN** the distance and exposure from its previous position to the destination are recorded before completion, and no time after exit is charged
+
+#### Scenario: Ordinary link exit
+- **WHEN** a vehicle leaves a link for a node or gate
+- **THEN** the final on-link increment and node increment are each counted once and their sum reconciles with the path driven

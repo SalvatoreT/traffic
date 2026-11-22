@@ -25,4 +25,5 @@
 - [x] 4.2 Prove tracing on/off does not change the final implementation's runs and verify native/WASM diagnostic parity.
 - [x] 4.3 Rerun the historical Colby/North question on the repaired engine and current inputs with the established seed policy; report updated routes, all-car effects, health, and limitations without tuning toward old numbers.
 - [x] 4.4 Verify keyboard, screen-reader, non-color, and narrow-screen use; document CLI commands and diagnostic limits.
-- [ ] 4.5 Validate the completed OpenSpec strictly and archive only after implementation and verification.
+- [x] 4.5 Validate the completed OpenSpec strictly and archive only after implementation and verification.
+  Closed 2026-11-22: every other task is ticked and the code is on main: `src/lib/redistribution.ts` and `src/lib/redistribution-view.ts` (with tests), the `data:redistribution` script (`package.json:23`, `tools/precompute-redistribution.ts`), and the stored diagnostics `public/data/redistribution/rockridge/*.json`, regenerated on the current simulator by the 2026-11-21 chain (`data/calibration/rockridge.record.md`, "Published set regenerated on the faster simulator"). All eight requirements are ADDED and none exists in `openspec/specs/`, so nothing in the specs is overwritten. Validated strictly, then archived.

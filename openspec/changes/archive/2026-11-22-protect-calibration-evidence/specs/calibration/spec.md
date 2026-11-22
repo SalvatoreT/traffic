@@ -65,19 +65,15 @@ An assessment SHALL carry the matching primitive-validation results, known devia
 ## MODIFIED Requirements
 
 ### Requirement: Station results are reported by source and count year
-The assessment SHALL report GEH pass counts by source and year, fitted and held out, with recent, older, and all-count totals. It SHALL judge recent counts using the area's `referenceYear` and `recentYears`. Held-out scores SHALL use a separate cross-validation demand with the same simulator and evaluation setup. Claims of out-of-sample or independent evidence SHALL satisfy the observation-dependency and validation-scope requirements.
+The demand fit report and the assessment SHALL list, for each period, the number of stations below GEH 5 per source and count year, fitted and held out. The station rule (more than 85% below GEH 5) SHALL be judged on the hourly counts of the last `recentYears` years before `referenceYear` (both from the area's demand config). The held-out stations SHALL be scored on the cross-validation demand, a fit that left them out, run with the same simulator, seeds and period as the shipped demand, so that their pass rate is out of sample; their pass rate on the shipped demand SHALL be reported as "validation stations, in the shipped fit" and SHALL NOT be judged. The rule SHALL NOT pass on fewer than 10 recent held-out stations; the report SHALL say they are too few to judge. A station target that is a scaled copy of another period's count SHALL NOT be judged, a station target derived from a daily total SHALL NOT be judged (see "Derived targets are left out of the pass counts"), and a period with no hourly counts of its own SHALL be judged on stability only, with the report saying so. The pass rate of older counts and of all counts SHALL be reported beside the recent ones. The calibration note and the Sources page SHALL state that the recent set rests mostly on one source when it does, with the numbers, and SHALL NOT quote pass rates of derived targets as counts. Claims of out-of-sample or independent evidence SHALL satisfy the observation-dependency and validation-scope requirements.
 
 #### Scenario: Recent sources
 - **WHEN** a period's stations are scored
-- **THEN** the report gives recent fitted scores on shipped demand and held-out scores on cross-validation demand, with the GEH-below-5 rule requiring more than 85% passing and older and all-count scores beside them
-
-#### Scenario: Shipped-fit scores at validation stations
-- **WHEN** a station was used in the shipped fit
-- **THEN** its score on that demand is labeled "validation stations, in the shipped fit" and is not judged as held-out evidence
+- **THEN** the report gives the pass counts of the recent stations, fitted on the shipped demand and held out on the cross-validation demand, with the verdict, and the pass counts of older stations and of all stations beside them
 
 #### Scenario: One dominant source
 - **WHEN** most recent stations come from one source counted on one day
-- **THEN** the assessment, calibration note, and Sources page name the source and its number of stations among the recent ones
+- **THEN** the assessment names the source and the count of its stations among the recent ones
 
 #### Scenario: Too few held-out stations
 - **WHEN** a period has fewer than 10 recent held-out stations
@@ -85,4 +81,9 @@ The assessment SHALL report GEH pass counts by source and year, fitted and held 
 
 #### Scenario: Midday
 - **WHEN** every midday target is the PM count times a factor
-- **THEN** derived targets are excluded from judged counts, the verdict says there are no midday counts and checks stability only, and user-facing claims do not quote derived-target pass rates as measured counts
+- **THEN** the verdict says there are no midday counts and midday is checked for stability only
+
+#### Scenario: A period whose only targets are derived
+- **WHEN** every target of a period is a scaled copy of another period's count or is derived from a daily total
+- **THEN** the verdict says the period has no hourly counts and judges it on stability only
+

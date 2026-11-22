@@ -45,11 +45,22 @@ Users SHALL be able to make a street one-way and ban a specific turn; routing SH
 - **THEN** no route uses A followed by B
 
 ### Requirement: Fixed demand caveat
-Because this version holds demand fixed, results SHALL be presented with a caveat that real-world schemes show some traffic reduction overall [Thomas2024].
+Because this version holds demand fixed, results SHALL be presented as conditional simulations of the specified trips. Any comparison with [Thomas2024] SHALL identify its London monitoring context and distinguish observed traffic counts from the simulator's distinct-through-car metric. External average effects SHALL NOT be used as local correctness targets without a documented transfer argument. Documentation SHALL NOT claim that fixed demand alone establishes an upper bound on a particular road's traffic, delay, or other outcome. A bound claim SHALL identify its metric, assumptions, and supporting proof or validated procedure.
 
 #### Scenario: Viewing comparison
 - **WHEN** a user views baseline-versus-scenario results
-- **THEN** the caveat and its citation are visible
+- **THEN** the fixed-demand caveat and any contextual citation are visible
+- **AND** the text states that behavioral demand response is outside that calculation
+
+#### Scenario: Local result differs from an external study average
+- **WHEN** a local scenario's result differs from the average in [Thomas2024]
+- **THEN** that difference alone is not treated as a simulator validation failure or success
+- **AND** any comparison identifies the population, metric, and model-scope differences
+
+#### Scenario: Claiming a worst case
+- **WHEN** a report has only the fact that trip demand was held fixed
+- **THEN** it describes the result as a fixed-demand scenario
+- **AND** it does not label link traffic or delay as a guaranteed upper bound
 
 ### Requirement: Diagonal diverter
 A diagonal diverter at a four-leg intersection SHALL let cars turn only between legs on the same side of its barrier line, so that neither street can be driven straight through, while people walking and biking pass in any direction, and routes SHALL adapt.
@@ -120,3 +131,25 @@ Documentation and Assumptions-facing copy SHALL say that a Slow Street sets the 
 #### Scenario: Reading the assumption
 - **WHEN** a reader opens the Slow Street entry in the docs or the text pages
 - **THEN** it states the full-compliance assumption
+
+### Requirement: Explicit signal cycles override baseline observed durations
+A valid `signal_timing` intervention SHALL set the signal's executed cycle even when the baseline node has an observed timing for the current period. The scenario SHALL retain the applicable phase topology and allocate greens within the requested cycle using the existing flow-based method [Webster1958], releasing baseline observed green-duration pins. The system SHALL disclose that the scenario retimes the observed plan.
+
+#### Scenario: Retiming an observed signal
+- **WHEN** a signal with a feasible observed 79-second baseline cycle receives a valid 100-second cycle intervention
+- **THEN** the scenario executes a 100-second cycle, and its phase greens and clearances fit that cycle
+
+#### Scenario: Later adaptation
+- **WHEN** traffic flows change and the plan adapts while an explicit valid cycle is active
+- **THEN** the cycle stays at the requested duration while green splits may change
+
+#### Scenario: Removing the retiming
+- **WHEN** the explicit cycle intervention is removed
+- **THEN** the signal uses its applicable validated baseline observation again
+
+### Requirement: Infeasible retiming produces an actionable error
+An explicit cycle that cannot accommodate the plan's required greens and clearances SHALL be rejected with a diagnostic identifying the node, period, requested cycle, and required budget. The system SHALL NOT accept the intervention and silently execute a longer cycle.
+
+#### Scenario: Too little time for the phase structure
+- **WHEN** the requested cycle is shorter than the phase structure's required duration budget
+- **THEN** scenario setup reports the incompatible timing, and no result is presented as having used the requested cycle

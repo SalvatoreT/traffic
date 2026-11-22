@@ -92,8 +92,8 @@ When a package no earlier search published is not beaten by one an earlier searc
 When a proposals file already holds a group computed on the same network and demand, a search with a profile SHALL start from that group's chosen packages that the profile allows: screen them, extend them in a beam of their own and recheck them with the other finalists. Those packages SHALL always be rechecked, whatever one-seed screening or the screening budget said, and SHALL NOT be dropped for failing to beat a simpler package. A profile that does not keep off the boundary SHALL offer every location a profile that does would offer. Within one invocation, a later profile SHALL start from the groups the earlier ones wrote.
 
 #### Scenario: Pilot packages seed the unconstrained search
-- **WHEN** the unconstrained search runs after the pilot profile on the same inputs
-- **THEN** every package the pilot group chose is rechecked in the unconstrained run, and the unconstrained group's best option cuts through cars at least as much as the pilot group's
+- **WHEN** a search without limits runs after a search with a profile on the same inputs
+- **THEN** every package the limited group chose is rechecked in the later run, and the later group's best option cuts through cars at least as much
 
 #### Scenario: Budget spent
 - **WHEN** the screening budget is exhausted before a stricter group's package is screened
