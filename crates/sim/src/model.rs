@@ -366,6 +366,11 @@ pub struct Config {
     /// Default on (change repair-permissive-left-and-gate-fork); `Some(false)` restores the earlier rule for A/B checks. Validation cases
     /// p1 to p3 measure it.
     pub queue_first_left: Option<bool>,
+    /// Router option (default `params::SINGLE_CONTROL_CHARGE`, off until a round adopts it; `calibrate --single-control-charge` and `--no-single-control-charge`): the expected control delay of `NodeDelays` is charged once.
+    /// The link's cost becomes `max(ff + control delay at its end, measured time)` and the movement's cost drops the constant, so a measured
+    /// link time, which already holds the queue, signal and stop wait, is not charged the constant again. Unmeasured or lightly loaded links
+    /// keep the constant as a floor. Initial placement (`initial_times`) keeps the static prior. See change calibration-round-54.
+    pub single_control_charge: Option<bool>,
 }
 
 /// Junction recovery policy. Every policy except `historical` keeps physical conflict exclusion regardless of the wait.
@@ -386,7 +391,7 @@ pub enum JunctionRecovery {
 
 impl Default for Config {
     fn default() -> Self {
-        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, guided_share: None, switch_band: None, route_dispersion: None, record_trips: false, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false, initial_load: true, interventions: Vec::new(), junction_recovery: JunctionRecovery::Physical, trace: false, trace_detail_max: None, lane_changes: None, coord_max_m: None, queue_first_left: None }
+        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, guided_share: None, switch_band: None, route_dispersion: None, record_trips: false, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false, initial_load: true, interventions: Vec::new(), junction_recovery: JunctionRecovery::Physical, trace: false, trace_detail_max: None, lane_changes: None, coord_max_m: None, queue_first_left: None, single_control_charge: None }
     }
 }
 

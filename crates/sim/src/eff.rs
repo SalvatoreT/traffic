@@ -103,6 +103,10 @@ pub struct Eff {
     pub ff: Vec<f32>,
     /// Perceived-cost weight per link in route choice (street-hierarchy preference; 1.0 on arterials).
     pub route_w: Vec<f32>,
+    /// Expected control delay (s) of each movement (`NodeDelays`): the part of `mv_static` that a link's measured time already contains once the link has been measured.
+    pub mv_ctrl: Vec<f32>,
+    /// `mv_ctrl` of the movements out of each link (the constant depends on the node's control and on the approach, never on the exit); 0 for a link with none.
+    pub link_ctrl: Vec<f32>,
     pub sig: Vec<Option<SigPlan>>,
     pub cycle_override: Vec<Option<f32>>,
     /// Links closed by a `one_way` intervention (everyone obeys); `closed` is the union with modal filters.
@@ -326,6 +330,7 @@ impl Eff {
         let mut mv_cost = vec![0.0; nm];
         let mut mv_vturn = vec![0.0; nm];
         let mut mv_ff = vec![0.0; nm];
+        let mut mv_ctrl = vec![0.0f32; nm];
         let mut mv_banned = vec![false; nm];
         let mut bike_mv_ok = vec![true; nm];
         let mut bike_mv_cost = vec![0.0; nm];
@@ -382,7 +387,7 @@ impl Eff {
                 K_UTURN => TURN_U_S,
                 _ => 0.0,
             };
-            c += match ctrl[n] {
+            let ctrl_c = match ctrl[n] {
                 Control::Signal => dl.signal,
                 Control::AllWayStop => dl.all_way_stop,
                 Control::TwoWayStop => {
@@ -395,10 +400,16 @@ impl Eff {
                 Control::TrafficCircle => dl.circle,
                 Control::Uncontrolled => 0.0,
             };
+            mv_ctrl[i] = ctrl_c;
+            c += ctrl_c;
             mv_cost[i] = c + mv_ff[i];
             // Bicycle movement cost: same turn and control delays, ASSUMPTION: crossing time at bicycle turn speed.
             let bt = bike_mv_vturn[i].min(BIKE_COST_V).max(1.0);
             bike_mv_cost[i] = c + len / bt;
+        }
+        let mut link_ctrl = vec![0.0f32; nl];
+        for (i, m) in topo.mvs.iter().enumerate() {
+            link_ctrl[m.a as usize] = mv_ctrl[i];
         }
         let bike_link_cost: Vec<f32> = (0..nl).map(|l| topo.length[l] / BIKE_COST_V).collect();
         let bike_w: Vec<f32> = net
@@ -429,6 +440,8 @@ impl Eff {
             leg_in_closed,
             leg_out_closed,
             mv_ok,
+            mv_ctrl,
+            link_ctrl,
             mv_static: mv_cost.clone(),
             mv_cost,
             mv_vturn,

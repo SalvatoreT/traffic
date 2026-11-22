@@ -76,10 +76,13 @@ struct Args {
     /// Permissive left turns by the queue-first gap model (`Config::queue_first_left`, default on); `--no-queue-first-left` restores the
     /// earlier rule for A/B checks, `--queue-first-left` states the default.
     queue_first_left: Option<bool>,
+    /// `--single-control-charge` / `--no-single-control-charge`: the router charges each junction's control delay once (`Config::single_control_charge`;
+    /// the default is `params::SINGLE_CONTROL_CHARGE`, off until a round adopts it).
+    single_control_charge: Option<bool>,
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, route_dispersion: None, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None, no_initial_load: false, seeds: None, jobs: 4, keep_seeds: None, junction_recovery: None, od_costs: None, od_links: Vec::new(), node_report: None, no_lane_changes: false, coord_max_m: None, queue_first_left: None };
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, route_dispersion: None, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None, no_initial_load: false, seeds: None, jobs: 4, keep_seeds: None, junction_recovery: None, od_costs: None, od_links: Vec::new(), node_report: None, no_lane_changes: false, coord_max_m: None, queue_first_left: None, single_control_charge: None };
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < argv.len() {
@@ -118,6 +121,8 @@ fn parse_args() -> Args {
             "--no-lane-changes" => a.no_lane_changes = true,
             "--queue-first-left" => a.queue_first_left = Some(true),
             "--no-queue-first-left" => a.queue_first_left = Some(false),
+            "--single-control-charge" => a.single_control_charge = Some(true),
+            "--no-single-control-charge" => a.single_control_charge = Some(false),
             "--coord-max-m" => a.coord_max_m = Some(val().parse().unwrap_or_else(|_| usage("bad --coord-max-m"))),
             "--node-report" => a.node_report = Some(PathBuf::from(val())),
             "--od-links" => a.od_links = val().split(',').filter_map(|x| x.parse().ok()).collect(),
@@ -142,7 +147,7 @@ fn usage(msg: &str) -> ! {
     if !msg.is_empty() {
         eprintln!("error: {msg}");
     }
-    eprintln!("usage: calibrate [--area rockridge] [--period pm_peak] [--minutes 60] [--scale 1.0] [--seed 1] [--warmup 10] [--adapt-min 5] [--motorway-removal] [--no-rtor] [--no-initial-load] [--out DIR] [--no-write] [--link-flows] [--cars-only] [--junction-recovery physical]");
+    eprintln!("usage: calibrate [--area rockridge] [--period pm_peak] [--minutes 60] [--scale 1.0] [--seed 1] [--warmup 10] [--adapt-min 5] [--motorway-removal] [--no-rtor] [--no-initial-load] [--single-control-charge|--no-single-control-charge] [--out DIR] [--no-write] [--link-flows] [--cars-only] [--junction-recovery physical]");
     std::process::exit(if msg.is_empty() { 0 } else { 2 });
 }
 
@@ -389,7 +394,7 @@ fn run_manifest(args: &Args, root: &Path, net_path: &Path, dem_path: &Path, dem_
     } else {
         None
     };
-    json!({
+    let mut manifest = json!({
         "schema": report_manifest::SCHEMA,
         "simulator": report_manifest::simulator(root),
         "inputs": {
@@ -414,7 +419,11 @@ fn run_manifest(args: &Args, root: &Path, net_path: &Path, dem_path: &Path, dem_
                 "motorwayRemoval": args.motorway_removal, "noRtor": args.no_rtor, "junctionRecovery": args.junction_recovery, "carsOnly": args.cars_only, "drop": args.drop, "noLaneChanges": args.no_lane_changes, "coordMaxM": args.coord_max_m, "queueFirstLeft": args.queue_first_left.unwrap_or(true),
             },
         },
-    })
+    });
+    if args.single_control_charge.unwrap_or(traffic_sim::params::SINGLE_CONTROL_CHARGE) {
+        manifest["run"]["settings"]["singleControlCharge"] = json!(true);
+    }
+    manifest
 }
 
 fn main() {
@@ -620,7 +629,7 @@ fn main() {
     sel.dedup();
 
     // ---- run
-    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, guided_share: args.guided_share, switch_band: args.switch_band, route_dispersion: args.route_dispersion, record_trips: true, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, no_right_turn_on_red: args.no_rtor, initial_load: !args.no_initial_load, junction_recovery: args.junction_recovery.unwrap_or_default(), lane_changes: if args.no_lane_changes { Some(false) } else { None }, coord_max_m: args.coord_max_m, queue_first_left: args.queue_first_left, ..Default::default() };
+    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, guided_share: args.guided_share, switch_band: args.switch_band, route_dispersion: args.route_dispersion, record_trips: true, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, no_right_turn_on_red: args.no_rtor, initial_load: !args.no_initial_load, junction_recovery: args.junction_recovery.unwrap_or_default(), lane_changes: if args.no_lane_changes { Some(false) } else { None }, coord_max_m: args.coord_max_m, queue_first_left: args.queue_first_left, single_control_charge: args.single_control_charge, ..Default::default() };
     let mut sim = Simulation::from_parts(net.clone(), demand.clone(), cfg).expect("sim");
     let total_s = args.minutes * 60.0;
     let warm_s = if total_s >= 1800.0 { args.warmup_min * 60.0 } else { 0.0 };

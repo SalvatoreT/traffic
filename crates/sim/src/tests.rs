@@ -1800,6 +1800,7 @@ mod modes;
 mod initial;
 mod diverter;
 mod route_choice;
+mod control_charge;
 mod cut_through;
 mod intent;
 mod junction;

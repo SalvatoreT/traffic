@@ -73,7 +73,7 @@ impl Simulation {
         self.ema.copy_from_slice(links);
         self.mv_ema.copy_from_slice(movements);
         for l in 0..self.topo.n_links {
-            self.link_cost[l] = self.eff.ff[l].max(self.ema[l]);
+            self.link_cost[l] = self.route_link_cost(l);
         }
         self.apply_mv_times();
         self.router.invalidate();

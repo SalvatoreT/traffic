@@ -100,6 +100,10 @@ pub const EMA_ALPHA: f32 = 0.3; // ASSUMPTION
 /// [Sheffi1985] eq. 11.12; the book's examples use 1 time unit for illustration). No value for urban street networks was found, so the value
 /// (s) is an ASSUMPTION chosen by a sweep on fitted evidence (calibration round 31).
 pub const ROUTE_DISPERSION_S: f32 = 2.0;
+/// Router option, off in the published model until a round adopts it (change calibration-round-54): the expected control delay below is charged once. A link's
+/// cost is `max(free flow + control delay at its end, measured time)` and a movement's cost drops the constant, so a measured link time, which already holds the
+/// queue, signal and stop wait, does not pay it again. Experienced time is what the route-choice references cost [Wardrop1952], [Sheffi1985], [Peeta2001].
+pub const SINGLE_CONTROL_CHARGE: bool = false;
 pub const TURN_RIGHT_S: f32 = 1.0; // ASSUMPTION: turn penalties for routing (s)
 pub const TURN_LEFT_S: f32 = 4.0; // ASSUMPTION
 pub const TURN_U_S: f32 = 25.0; // ASSUMPTION

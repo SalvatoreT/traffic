@@ -1298,7 +1298,7 @@ impl Simulation {
         self.win_exit.iter_mut().for_each(|x| *x = 0);
         self.next_adapt_t = self.t + self.adapt_interval();
         for l in 0..self.topo.n_links {
-            self.link_cost[l] = self.eff.ff[l].max(self.ema[l]);
+            self.link_cost[l] = self.route_link_cost(l);
         }
         self.apply_mv_times();
         self.router.invalidate();
@@ -3902,6 +3902,22 @@ impl Simulation {
         }
     }
 
+    /// Router option `Config::single_control_charge` (default `SINGLE_CONTROL_CHARGE`).
+    fn single_control_charge(&self) -> bool {
+        self.cfg.single_control_charge.unwrap_or(SINGLE_CONTROL_CHARGE)
+    }
+
+    /// Router cost of link `l` from its measured time: the larger of free flow and the measurement, which holds the queue, signal and stop wait.
+    /// With `single_control_charge` the free-flow side carries the expected control delay at the link's end, so the constant is a floor and
+    /// drops out once the measured time exceeds it (`apply_mv_times` drops it from the movement).
+    pub(crate) fn route_link_cost(&self, l: usize) -> f32 {
+        if self.single_control_charge() {
+            (self.eff.ff[l] + self.eff.link_ctrl[l]).max(self.ema[l])
+        } else {
+            self.eff.ff[l].max(self.ema[l])
+        }
+    }
+
     /// Fold the link times measured since the last update into the route costs and drop the cached routing tables.
     fn update_costs(&mut self) {
         for l in 0..self.topo.n_links {
@@ -3925,7 +3941,7 @@ impl Simulation {
             }
             self.tt_sum[l] = 0.0;
             self.tt_n[l] = 0;
-            self.link_cost[l] = self.eff.ff[l].max(self.ema[l]);
+            self.link_cost[l] = self.route_link_cost(l);
         }
         for m in 0..self.mv_ema.len() {
             let a = self.topo.mvs[m].a as usize;
@@ -3952,6 +3968,12 @@ impl Simulation {
         self.perceived.invalidate();
         for m in 0..self.mv_ema.len() {
             let a = self.topo.mvs[m].a as usize;
+            if self.single_control_charge() {
+                let base = self.eff.ff[a].max(self.ema[a]);
+                let extra = if self.mv_ema[m] > 0.0 { self.mv_ema[m].max(self.eff.ff[a]) - base } else { 0.0 };
+                self.eff.mv_cost[m] = self.eff.mv_static[m] - self.eff.mv_ctrl[m] + extra * self.eff.route_w[a];
+                continue;
+            }
             let extra = if self.mv_ema[m] > 0.0 { self.mv_ema[m].max(self.eff.ff[a]) - self.link_cost[a] } else { 0.0 };
             self.eff.mv_cost[m] = self.eff.mv_static[m] + extra * self.eff.route_w[a];
         }
@@ -4303,10 +4325,25 @@ impl Simulation {
 
     pub(crate) fn test_set_ema(&mut self, link: usize, v: f32) {
         self.ema[link] = v;
-        self.link_cost[link] = self.eff.ff[link].max(v);
+        self.link_cost[link] = self.route_link_cost(link);
         self.perceived.invalidate();
         self.router.invalidate();
         self.spawn_cache.clear();
+    }
+
+    pub(crate) fn test_set_mv_ema(&mut self, a: u32, b: u32, v: f32) {
+        let m = self.topo.find_mv(a, b).unwrap() as usize;
+        self.mv_ema[m] = v;
+    }
+
+    /// Router costs of the movement `a` to `b`: the link cost of `a`, the movement cost, its static cost and its control constant.
+    pub(crate) fn test_costs(&self, a: u32, b: u32) -> (f32, f32, f32, f32) {
+        let m = self.topo.find_mv(a, b).unwrap() as usize;
+        (self.link_cost[a as usize], self.eff.mv_cost[m], self.eff.mv_static[m], self.eff.mv_ctrl[m])
+    }
+
+    pub(crate) fn test_ff(&self, l: u32) -> f32 {
+        self.eff.ff[l as usize]
     }
 
     pub(crate) fn test_route_for(&mut self, origin: u32, dest: u32, seed: u32) -> Option<Vec<u32>> {
