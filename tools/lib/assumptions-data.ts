@@ -65,7 +65,7 @@ const dayLabel = (id: string): string => {
 
 /** `countSourceId` is the id of the count file's source ("volunteer-count-2025-02-25"); its date names the count. */
 /** `links` gives each movement id's approach link, exit link and junction node in the network (see `buildAssumptions`'s caller); a movement it lacks gets no map fields. */
-export function buildAssumptions(cfg: AssumptionsCfg, fitText: string, o: { area: string; demandHash: string; countSourceId: string; generated: string; links?: Record<string, { from: number; to: number; node: number }>; derivedTargets?: DerivedTargetsView | null }): Omit<AssumptionsFile, 'movements'> & { movements: MovementData[] } {
+export function buildAssumptions(cfg: AssumptionsCfg, fitText: string, o: { area: string; demandHash: string; countSourceId: string; generated: string; links?: Record<string, { from: number; to: number; node: number }>; derivedTargets?: DerivedTargetsView | null; corridors?: { list: { id: string; name: string }[]; of: Record<string, string> } }): Omit<AssumptionsFile, 'movements'> & { movements: MovementData[] } {
   const fit = parseFitReport(fitText);
   const vc = cfg.volunteerCount;
   const measured = vc ? [vc.periods.am, vc.periods.pm] : [];
@@ -85,13 +85,14 @@ export function buildAssumptions(cfg: AssumptionsCfg, fitText: string, o: { area
     for (const r of below) delete assigned[r.period];
     const extra = below.length ? { belowThreshold: Object.fromEntries(below.map((r) => [r.period, r.counted])), belowThresholdNote: `The count shows these cars, but fewer than the count fit's minimum for a turning movement, so the fit has no target for the turn and the model assigns no trips to it in ${below.map((r) => r.period).join(' and ')}.` } : {};
     const at = o.links?.[m.id];
-    return { id: m.id, label: m.label, ...(at ? { from: at.from, to: at.to, node: at.node } : {}), maxDetour: m.maxDetour, counted, assigned, intents, ...extra };
+    return { id: m.id, label: m.label, ...(at ? { from: at.from, to: at.to, node: at.node } : {}), ...(o.corridors?.of[m.id] ? { corridor: o.corridors.of[m.id] } : {}), maxDetour: m.maxDetour, counted, assigned, intents, ...extra };
   });
   const day = dayLabel(o.countSourceId);
   return {
     version: ASSUMPTIONS_VERSION, area: o.area, generated: o.generated, inputs: { demandHash: o.demandHash },
     count: { label: day ? `the resident volunteer count of ${day}` : 'the resident volunteer count', measured, scaled },
     movements,
+    ...(o.corridors ? { corridors: o.corridors.list } : {}),
     ...(o.derivedTargets ? { derivedTargets: o.derivedTargets } : {}),
   };
 }

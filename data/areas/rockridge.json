@@ -238,6 +238,22 @@
       }
     ]
   },
+  "cutThroughCorridors": {
+    "corridors": [
+      { "id": "hillegass", "name": "Hillegass Ave", "streets": ["Hillegass Avenue"], "directionBy": "compass" },
+      { "id": "colby", "name": "Colby St", "streets": ["Colby Street"], "directionBy": "compass" },
+      {
+        "id": "southwest",
+        "name": "Southwest streets (McAuley St, Howell St, Ayala Ave and neighbors)",
+        "streets": ["Canning Street", "McAuley Street", "Howell Street", "Ayala Avenue", "Martin Street", "Forest Street", "Hermann Street", "Vicente Street", "57th Street", "58th Street", "59th Street"],
+        "directionBy": "ends"
+      }
+    ],
+    "otherName": "Other side streets",
+    "nearestM": 400,
+    "secondShare": 0.3,
+    "sides": { "west": ["Telegraph Avenue"], "east": ["College Avenue", "Claremont Avenue"] }
+  },
   "judgedZone": {
     "bufferM": 200,
     "source": "ASSUMPTION (calibration round 37): cars cleared from gridlock count against the stability rule when held in the study area, on its bounding streets, at the junctions on them, or at a node within this distance of them along the network. A bounding street's queue holds a car beyond it by filling the cross-street link into its junction, so the zone must reach the first junction beyond each bounding street: 113 m away at the median, 200 m at the 75th percentile, 301 m at most. A queue that spills farther is a chain of held vehicles, which the rule follows to any distance"

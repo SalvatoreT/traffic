@@ -14,6 +14,7 @@ import { calibrationCaveat } from '../../src/lib/caveat';
 import { buildIndex, type NetIndex } from '../../src/lib/naming';
 import { blockMeasured } from '../../src/lib/scope';
 import { isLocal } from '../../src/lib/intents';
+import { FOLD_SHARE, CORRIDOR_INTRO, CORRIDOR_TABLE_NOTE, corridorRule, corridorView, crossingLines, crossingSentences, multiSentence, carsText, percentText, reasonsOf, type CorridorPeriod, type FlowRow } from '../../src/lib/corridors';
 import { ROUTE_CAVEAT } from '../../src/lib/throughroutes';
 import { SPEED_LIMITS_MPH, SIGNAL_CYCLES_S } from '../../src/lib/selection';
 import {
@@ -336,6 +337,7 @@ export function assumptionsMd(i: LlmsInput): string {
   }
   const intents = i.demand.intents ?? [];
   if (intents.length) {
+    out.push(...corridorLines(i));
     out.push('## Why cars cut through', '', 'These are hypotheses about why drivers cross the study area without an end in it, not what drivers said. A through trip that uses a residential or service street is filed under the first reason that fits: the freeway on-ramp it will use, the off-ramp it came by, or, for trips that use no ramp, where it starts and ends; any other goes under Other.', '', `**${BASIS_TEXT.observed}:** ${BASIS_HELP.observed}`, '', `**${BASIS_TEXT.assumed}:** ${BASIS_HELP.assumed}`, '');
     const b = i.baselineIntents;
     const bc = b ? currency(b.inputs, i) : null;
@@ -360,6 +362,43 @@ export function assumptionsMd(i: LlmsInput): string {
     out.push(table(['Station', 'Source', ...periods.map(label), 'Status'], dt.stations.map((s) => [s.label, `${s.source}${s.year ? `, ${s.year}` : ''}`, ...periods.map((p) => s.targets[p] ?? '—'), 'derived from a daily total, not judged'])), '');
   }
   return out.join('\n');
+}
+/** The corridor section of the assumptions page: the same table, rule and notes as the tab. */
+export function corridorLines(i: LlmsInput): string[] {
+  const b = i.baselineIntents, intents = i.demand.intents ?? [];
+  const label = periodLabelOf(i.demand), ids = order(i);
+  const out = ['## Where cars cut through', '', CORRIDOR_INTRO, '', corridorRule(), ''];
+  const bc = b ? currency(b.inputs, i) : null;
+  if (!b) return [...out, 'No stored baseline is available, so the table of corridors is not shown.', ''];
+  if (bc && !bc.current) return [...out, outOfDate(bc), ''];
+  const defs = b.corridorDefs;
+  const lead = i.area.calibration?.defaultPeriod ?? ids[0];
+  const periods: Record<string, CorridorPeriod | undefined> = Object.fromEntries(Object.entries(b.periods).map(([p, v]) => [p, v.corridors]));
+  const shown = [lead, ...ids.filter((p) => p !== lead)].filter((p) => periods[p]);
+  const view = defs && periods[lead] ? corridorView(defs, periods, shown, lead) : null;
+  if (!defs || !view) return [...out, 'The stored traffic has no table of corridors.', ''];
+  const cell = (r: Pick<FlowRow, 'vph' | 'share'>, p: string) => `${carsText(r.vph[p] ?? 0)} (${percentText(r.share[p] ?? 0)})`;
+  const streets = (id: string) => defs.corridors.find((c) => c.id === id)?.streets.map((s) => (s.part ? `${s.name} (part)` : s.name)).join(', ') ?? '';
+  const reasons = (r: FlowRow) => reasonsOf(intents, r.byIntent, shown).map((x) => `${x.label}${x.def ? ` (${BASIS_TEXT[x.def.basis]})` : ''}: ${shown.map((p) => `${label(p)} ${carsText(x.vph[p])}`).join(', ')} an hour.${x.def?.avoids ? ` Would otherwise use ${x.def.avoids}, by the model's shortest route with the side streets closed.` : ''}`);
+  out.push(`Cars an hour and share of all through cars, today's traffic:`, '');
+  out.push(table(['Corridor', 'Direction', ...shown.map(label)], [
+    ...view.rows.map((r) => [r.corridorName, r.direction, ...shown.map((p) => cell(r, p))]),
+    ...(view.folded.length ? [['Smaller flows', `${view.folded.length} flows`, ...shown.map((p) => cell({ vph: view.foldedVph, share: view.foldedShare }, p))]] : []),
+    ['All through cars', '', ...shown.map((p) => `${carsText(view.totals[p])} (100%)`)],
+  ]), '', CORRIDOR_TABLE_NOTE, '');
+  for (const r of view.rows) {
+    out.push(`### ${r.corridorName}, ${r.direction}`, '', `Streets in this corridor: ${streets(r.corridor)}.`, '', 'Why these cars are here:', '', ...reasons(r).map((x) => `- ${x}`), '');
+  }
+  if (view.folded.length) {
+    out.push('### Smaller flows', '', `Each is under ${Math.round(FOLD_SHARE * 100)}% of the through cars in every period.`, '');
+    for (const r of view.folded) out.push(`- ${r.corridorName}, ${r.direction}: ${shown.map((p) => `${label(p)} ${carsText(r.vph[p] ?? 0)}`).join(', ')} an hour. Reasons: ${reasons(r).join(' ')}`);
+    out.push('');
+  }
+  const multi = multiSentence(defs, periods[lead], label(lead));
+  if (multi) out.push(multi, '');
+  const cross = crossingSentences(crossingLines(defs, periods, shown, lead), shown, lead, label);
+  if (cross.length) out.push('Crossing the study area east to west:', '', ...cross.map((c) => `- ${c}`), '');
+  return out;
 }
 const order = (i: LlmsInput) => i.demand.periods.map((p) => p.id);
 
