@@ -452,6 +452,10 @@ describe('per-pass diagnostics (report only)', () => {
     const d = diagnose({ pass: 1, view: 'shipped', period: 'pm_peak', runs, stations: stationsInfo, held: new Set(['heldout']), recency, watch, fit });
     expect(d.watch.map((w) => [w.group, w.id, w.counted, w.fit, w.sim])).toEqual([['held-out miss', 'heldout', 100, null, 101], ['diagonal', 'ok', 100, 97, 98], ['diagonal', 'far', 100, 1012, 40]]);
   });
+  it('leaves a watched station out when the stations file lacks it', () => {
+    const d = diagnose({ pass: 1, view: 'shipped', period: 'pm_peak', runs, stations: stationsInfo, held: new Set<string>(), recency, watch: { heldOutMisses: [{ id: 'nowhere', period: 'pm_peak' }], diagonal: [{ id: 'ok', period: 'pm_peak' }] }, fit: null });
+    expect(d.watch.map((w) => w.id)).toEqual(['ok']);
+  });
   it('renders the tables and the diagonal sum', () => {
     const base = { stations: stationsInfo, held: new Set(['heldout']), recency, watch, fit: null };
     const diags = [0, 1].flatMap((pass) => ['shipped', 'training'].map((view) => diagnose({ ...base, pass, view, period: 'pm_peak', runs })));
