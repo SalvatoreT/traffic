@@ -1,5 +1,3 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { makeProjection, pointInPolygon } from './lib/geo';
 import { buildNetwork } from './lib/network';
@@ -65,24 +63,5 @@ describe('model extent', () => {
     const { network } = buildNetwork({ ...base, extent: { polygon: ring, include: { ways: [100] } } }, grid());
     const ids = new Set(network.nodes.map((n) => n.osmId));
     for (let i = 1; i < 4; i++) expect(ids.has(nid(i, 0))).toBe(true);
-  });
-});
-
-const root = resolve(import.meta.dirname, '..');
-const compactPath = resolve(root, 'data/areas/rockridge-compact.json');
-describe.runIf(existsSync(compactPath))('rockridge-compact', () => {
-  const cfg: AreaConfig = JSON.parse(readFileSync(compactPath, 'utf8'));
-  const full: AreaConfig = JSON.parse(readFileSync(resolve(root, 'data/areas/rockridge.json'), 'utf8'));
-  it('shares the study area and settings of rockridge and differs only in id, name, extent, preview and calibration note', () => {
-    const strip = (c: AreaConfig) => { const { id, name, extent, preview, calibration, ...rest } = c; void id; void name; void extent; void preview; void calibration; return rest; };
-    expect(strip(cfg)).toEqual(strip(full));
-    expect(cfg.preview).toBe(true);
-    expect(cfg.extent?.polygon?.length).toBeGreaterThan(3);
-  });
-  it.runIf(existsSync(resolve(root, cfg.extract)))('builds a network with every ramp reaching the mainline', () => {
-    const osm = JSON.parse(readFileSync(resolve(root, cfg.extract), 'utf8'));
-    const { network, stats } = buildNetwork(cfg, osm);
-    expect(stats.freewayRampViolations).toEqual([]);
-    expect(network.nodes.filter((n) => n.inStudyArea).length).toBeGreaterThan(50);
   });
 });

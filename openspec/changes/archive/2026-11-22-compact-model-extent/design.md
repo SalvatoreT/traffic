@@ -66,6 +66,12 @@ One deviation from the lead's wording, "where a gate has its own count, the coun
 
 Result (2026-11-16, PM seeds 1 to 20): the prior was built without tuning, but the fitted evidence got worse and southbound through cars stayed far above the current model's (Hillegass Ave SB 200 and 225, Colby St SB 231 and 225 an hour on seeds 1 to 10 and 11 to 20, against 143 and 132 in the current model). By the rule above the prior is not kept: `rockridge-compact` is back on its as-built demand, byte for byte. The round stopped there, as the lead set out; the rest of the evaluation was not run. The generic tooling (`extent.parent`, `tools/cordon-prior.ts`, the prior step in the demand build) stays, unused by any shipped area.
 
+### D9. Decision: drop the compact model (2026-11-22)
+
+Decision by the project lead, 2026-11-22, on the second round's result: drop the compact model, archive this change, and remove the `rockridge-compact` preview from the area list so it no longer opens by link. The extent code stays. This applies the rule of D8: southbound cut-through did not come into line, so the compact model is not adopted.
+
+Removed: `data/areas/rockridge-compact.json`, its demand config, split and fit reports, its calibration targets, and its entries in `data/manifest.json`; the live `areas.json` is rebuilt without the entry. Kept: the importer's `extent` and `preview` fields, the demand build's block filter, the cordon prior tool, the app's preview handling and their generic tests, and the comparison evidence in `data/calibration/` (`rockridge.extent-comparison.md`, `rockridge-compact.assessment-compact.md`, `rockridge-compact.cost-loop.md`). The compact area's config is in git history at commit `aa7aea2a17ed48e68ed6fde48275a7af85c9971c`. The `rockridge` network, basemap and `areas.json` entry are unchanged. The Telegraph/Alcatraz test that compared the compact config with `rockridge` is deleted with the config.
+
 ## Risks
 
 - The copies of the area config, demand config and targets can drift from `rockridge` while both exist.

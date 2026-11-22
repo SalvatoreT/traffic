@@ -1156,3 +1156,14 @@ Redistribution and proposal entry points SHALL show absolute all-car counts and 
 #### Scenario: Boundary traffic has no neighborhood through metric
 - **WHEN** a boundary link carries external-to-external cars but its existing neighborhood through counter is inapplicable
 - **THEN** the UI shows valid origin/destination passage classes or marks the decomposition unavailable, and never relabels those cars local merely because the existing through counter is zero
+
+### Requirement: Preview areas
+An area config SHALL be able to mark the area as a preview. The importer SHALL copy the flag into `areas.json` and list preview areas after the others. The app SHALL never open a preview area by default; a scenario link that names it SHALL open it.
+
+#### Scenario: Plain visit
+- **WHEN** a visitor opens the site without a scenario link and `areas.json` lists a public area and a preview area
+- **THEN** the app opens the public area
+
+#### Scenario: Link to the preview
+- **WHEN** a scenario link names the preview area with `a=<id>`
+- **THEN** the app opens the preview area

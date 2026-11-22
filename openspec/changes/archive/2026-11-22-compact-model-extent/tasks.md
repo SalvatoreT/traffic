@@ -26,7 +26,7 @@
 
 - [x] 4.1 `data/calibration/rockridge.extent-comparison.md`
 - [x] 4.2 Tests pass (`cargo test -p traffic-sim`, `npm test`), native and WASM parity, merge, push
-- [ ] 4.3 Archive once the project lead decides (not before)
+- [x] 4.3 Archive once the project lead decides (not before): decided 2026-11-22, drop (design D9)
 
 ## 5. Second round: cordon prior from the parent model (project lead, 2026-11-16)
 
