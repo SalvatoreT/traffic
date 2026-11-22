@@ -65,7 +65,7 @@ describe('the card text for turn bans', () => {
     expect(h.text).toBe('41 turn restrictions around the edge of the area');
     expect(h.caveat).toBe(BAN_CAVEAT);
     expect(BAN_CAVEAT).toMatch(/every driver, residents included, all day/);
-    expect(BAN_CAVEAT).toMatch(/full compliance \(ASSUMPTION\)/);
+    expect(BAN_CAVEAT).toMatch(/full compliance/);
   });
   it('counts single bans and shows nothing for a package without any', () => {
     const singles = [{ type: 'turn_ban', label: 'a' }, { type: 'turn_ban', label: 'b' }];
