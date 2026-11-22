@@ -45,7 +45,7 @@ fi
 for pair in "shipped:rockridge.membership.json" "training:rockridge.membership-training.json"; do
   v=${pair%%:*}; f=${pair#*:}
   [ -f target/membership-loop/pools/i2-$v.json ] || { log "no pass 2 pool for the $v view (the loop stopped earlier)"; continue; }
-  node $JD target/published/$f target/membership-loop/pools/i2-$v.json --ignore periods.*.source --ignore periods.*.stations.source --ignore periods.*.blocks.source > $A/pool2-$v-diff.txt 2>&1 \
+  node $JD target/published/$f target/membership-loop/pools/i2-$v.json --ignore 'periods.*.source' --ignore 'periods.*.stations.source' --ignore 'periods.*.blocks.source' > $A/pool2-$v-diff.txt 2>&1 \
     && log "pool after pass 2, $v view: equal to the published membership file apart from the recorded run paths" \
     || stop "the pass 2 pool of the $v view differs from the published membership file: $(head -4 $A/pool2-$v-diff.txt | tr '\n' ' ')"
 done

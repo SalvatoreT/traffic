@@ -23,7 +23,7 @@ got="config $(h data/demand/rockridge.config.json) split $(h data/demand/rockrid
 want="config $EXP_CONFIG split $EXP_SPLIT stations $EXP_STATIONS network $EXP_NETWORK demand $EXP_DEMAND cv $EXP_CV membership $EXP_MEMB training $EXP_MEMBT proposals $EXP_PROPOSALS"
 echo "published inputs: $got"
 [ "$got" = "$want" ] || { echo "the local data is not the published set"; echo "expected: $want"; exit 1; }
-git fetch origin $BR || exit 1
+git fetch origin ${BR} || exit 1
 [ -e $W ] && { echo "$W exists already; remove it (git worktree remove --force $W) or pick another W"; exit 1; }
 
 # 1. The worktree with its own copies of the git-ignored data

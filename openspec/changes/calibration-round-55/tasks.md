@@ -13,14 +13,14 @@
 
 ## 2. Laptop runs (runbook.md)
 
-- [ ] 2.1 Step A: worktree, gates, dry runs, baseline assessments
-- [ ] 2.2 Step B: the loop with a cap of 8 passes, the identity checks
-- [ ] 2.3 Step C: validation, the candidate's assessments on seeds 1 to 10 and 11 to 20, the keep rule and the improvement test
-- [ ] 2.4 Step D, only if C passes: the staged proposal search and the headline check
-- [ ] 2.5 Step E: pack the evidence
+- [x] 2.1 Step A: worktree, gates, dry runs, baseline assessments
+- [x] 2.2 Step B: the loop with a cap of 8 passes, the identity checks
+- [x] 2.3 Step C: validation, the candidate's assessments on seeds 1 to 10 and 11 to 20, the keep rule and the improvement test
+- [ ] 2.4 Step D, only if C passes: the staged proposal search and the headline check (not run: step C failed)
+- [x] 2.5 Step E: pack the evidence
 
 ## 3. Verdict (project lead)
 
-- [ ] 3.1 Read the diagnostics, the keep rule and the headline check
-- [ ] 3.2 Record the round in `data/calibration/rockridge.record.md`, adopted or not
-- [ ] 3.3 If adopted: publish by the documented procedure in `data/README.md`
+- [x] 3.1 Read the diagnostics, the keep rule and the headline check
+- [x] 3.2 Record the round in `data/calibration/rockridge.record.md`, adopted or not
+- [ ] 3.3 If adopted: publish by the documented procedure in `data/README.md` (not applicable: not adopted)

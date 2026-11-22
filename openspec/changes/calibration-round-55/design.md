@@ -93,6 +93,16 @@ A synthetic check with the repository's own `iterationShift`: 300 stations, 10 s
 
 So with seeds that are independent between passes, the flow line fires about half the time at an exact fixed point and the four lines together (shipped and training, PM and AM) far less often, and a flow drift of 2% already blocks it. The loop reuses seeds 1 to 10 in every pass, which may correlate the two passes and make the rule easier to meet; the diagnostics will show the ratios. The limit of 1 is an ASSUMPTION with no source and the lead asked that it not be loosened to make it fire, so it stays. Reading the run: if the rule does not fire by pass 8, look at the "beyond noise" column before calling the loop unconverged. A flow change beyond noise that keeps falling pass over pass is convergence at the cap, and one that stops falling is a loop that settles away from its fixed point or oscillates.
 
+## Outcome
+
+The laptop run (2026-11-21, 6:40:56 to 9:15:36 PM Pacific, 9280 s) ran all eight passes and the stop rule never fired. From pass 4 on the membership ratio is below 1 everywhere, and one flow ratio or another sits just above 1 on each pass, in a different cell each time. That is the noise floor described above, not drift. Passes 0 to 2 are byte-identical to the derived-targets loop, and the pass 2 pools equal the published membership files apart from the recorded run paths.
+
+The keep rule fails on PM fitted (79 to 78 of 89 on seeds 1 to 10, 80 to 79 on seeds 11 to 20) and on AM fitted on seeds 11 to 20 (74 to 72 of 77). The improvement test fails: PM held out stays at 15 of 18 and AM held out at 15 of 19 on both seed sets. The candidate is not adopted and nothing was published. The published model stays round 52 under the derived-targets scope. Step D, the staged proposal search, did not run because it is gated on step C.
+
+The in-loop diagonal sum fell (shipped simulated 373 at pass 2 to 285 at pass 7, training 416 to 325, against 178 counted), but the ten-seed judge did not move any held-out station.
+
+Decision (project lead's standing goal of 2026-11-21, item 5): stop. Rounds 53, 54 and 55 each failed to improve a judged line, which is the stopping condition. The calibration effort ends at a documented stopping point. The loop-control and diagnostics code stays on `main` with the default of three passes; the answer to open question 2 is that the stop rule is kept as written (`STOP_RATIO = 1` stays an ASSUMPTION) and no noise-corrected rule is added. The record entry is in `data/calibration/rockridge.record.md`.
+
 ## References
 
 All in `docs/references.md`, verification status as there.
