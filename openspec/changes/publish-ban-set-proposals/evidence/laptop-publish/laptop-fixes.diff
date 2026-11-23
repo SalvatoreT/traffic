@@ -1,0 +1,11 @@
+--- openspec/changes/publish-ban-set-proposals/laptop/a.zsh	2026-11-22 06:59:54
++++ openspec/changes/publish-ban-set-proposals/laptop/a.laptop.zsh	2026-11-22 07:01:08
+@@ -35,7 +35,7 @@
+ cp -R ${BATCH}/public/data/. public/data/
+ cp -R ${BATCH}/data/osm/. data/osm/
+ [ -d ${BATCH}/src/sim/pkg ] && cp -R ${BATCH}/src/sim/pkg src/sim/pkg
+-[ -d .claude/skills/humanizer ] || npm install --no-audit --no-fund > ${A}/npm-install.log 2>&1
++[ -d .claude/skills/humanizer ] || cp -R ${MAIN}/.claude/skills/humanizer .claude/skills/humanizer  # laptop fix: node_modules links to MAIN, so npm install here would write into the main checkout; copy the skill instead
+ mkdir -p ${T}/published
+ cp public/data/rockridge.proposals.json data/proposals/rockridge.md data/proposals/rockridge.seeds.json ${T}/published/
+ cp -R public/data/results public/data/redistribution ${T}/published/
