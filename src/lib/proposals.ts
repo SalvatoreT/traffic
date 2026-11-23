@@ -421,7 +421,7 @@ export function seedsPhrase(seeds: number[]): string {
  * Figure 1: through cars an hour across the area's side streets, before and after. `when` is a `periodsPhrase`, `runs` the seeds behind the
  * mean and `area` the study area's name; `scope` says what the figure counts, for which periods and from how many runs.
  */
-export function cutThroughHeadline(c: CutThrough, when = 'the searched periods', runs?: number[], area?: string): { figure: string; label: string; change: string; lead: string; pct: string; scope: string; interval: string } {
+export function cutThroughHeadline(c: CutThrough, when = 'the searched periods', runs?: number[], area?: string): { figure: string; label: string; change: string; lead: string; delta: string; pct: string; scope: string; interval: string } {
   const b = Math.round(c.baselineVehPerHour), s = Math.round(c.scenarioVehPerHour);
   const d = s - b;
   const pct = signedPct(c.changePct);
@@ -430,6 +430,7 @@ export function cutThroughHeadline(c: CutThrough, when = 'the searched periods',
     figure: `${b} → ${s}`,
     label: 'through cars an hour',
     lead: d < 0 ? 'Cut-through reduction:' : d > 0 ? 'Cut-through increase:' : 'Cut-through:',
+    delta: d === 0 ? '0' : `${d < 0 ? MINUS : '+'}${Math.abs(d)}`,
     pct,
     change: d === 0 ? `No change (${pct})` : `${d < 0 ? MINUS : '+'}${Math.abs(d)} cars an hour (${pct})`,
     scope: `Cars crossing ${area ? `${area}'s` : "the area's"} side streets without a trip that starts or ends there, each counted once. ${when[0].toUpperCase()}${when.slice(1)}; ${basis}.`,
@@ -532,7 +533,7 @@ export function allTrafficRows(p: Proposal, periodLabel: (id: string) => string)
  * not tell which trips moved: that needs the route diagnostic, and its absence is not a finding of no diversion.
  */
 export function allTrafficHeadline(rows: AllTrafficRow[]): { none: boolean; figure: string; label: string; short: string; split: string; interval: string; attribution: string } {
-  const attribution = 'Which trips moved, and by which streets, is not part of these figures: open Where traffic goes to trace them. Until then no diversion has been ruled out.';
+  const attribution = 'These figures do not say which trips moved or by which streets. Where filtered traffic goes, on the card, follows the through cars that used each closure. By these figures alone no diversion has been ruled out.';
   const r = rows.filter((x) => x.block !== null && !x.flagged).sort((a, b) => b.change - a.change)[0];
   if (!r) {
     const old = rows.some((x) => x.flagged);

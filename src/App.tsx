@@ -649,8 +649,7 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
               </div>
             )}
           </div>
-          {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals} loaded={evidenceInputs ?? NO_HASHES} mode={mode} current={interventions} onOpen={onOpenProposal}
-            onTrace={(p, ivs) => { const i = ivs.findIndex(canTrace); if (i >= 0) setRedist({ package: ivs, closure: i, source: 'proposal', title: p.title }); }} notice={goneNotice ? GONE_NOTICE : null} onCopyLink={(p, g) => copyLink(`${location.origin}${pathOfSlug(slugOf(g, p.link))}`, 'Link to this proposal copied.')} />}
+          {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals} loaded={evidenceInputs ?? NO_HASHES} mode={mode} current={interventions} onOpen={onOpenProposal} notice={goneNotice ? GONE_NOTICE : null} onCopyLink={(p, g) => copyLink(`${location.origin}${pathOfSlug(slugOf(g, p.link))}`, 'Link to this proposal copied.')} />}
           {view === 'methodology' && <Suspense fallback={<p className="boot" role="status">Loading methodology…</p>}><Methodology area={bundle.entry} /></Suspense>}
           {view === 'assumptions' && <Suspense fallback={<p className="boot" role="status">Loading assumptions…</p>}><Assumptions bundle={bundle} index={index} mode={mode} hashes={hashes} fingerprint={fingerprint} /></Suspense>}
           {redist && (

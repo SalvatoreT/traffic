@@ -10,7 +10,6 @@ import { pathOfSlug, slugOf } from '../lib/share-path';
 import type { NetIndex } from '../lib/naming';
 import { checkThroughRoutes, ROUTE_CAVEAT } from '../lib/throughroutes';
 import { buildMockProposals } from '../fixtures/proposals';
-import { canTrace } from '../lib/redistribution-view';
 import { shortStreetsDeep } from '../lib/streets';
 import {
   allTrafficHeadline, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, detourText, evidenceNote, fetchProposals, formatComputed, harmHeadline, INTERVAL_SCOPE, intervalText, periodsPhrase,
@@ -54,11 +53,9 @@ interface Props {
   /** Said above the cards when a share path named a proposal that is no longer published. */
   notice?: string | null;
   onCopyLink(p: Proposal, groupId: string): void;
-  /** Open "Where traffic goes" for a package. */
-  onTrace?(p: Proposal, ivs: Intervention[]): void;
 }
 
-export function Proposals({ bundle, index, today, state, loaded, mode, current, onOpen, notice, onCopyLink, onTrace }: Props) {
+export function Proposals({ bundle, index, today, state, loaded, mode, current, onOpen, notice, onCopyLink }: Props) {
   const periodLabel = useMemo(() => {
     const m = new Map(bundle.demand.periods.map((p) => [p.id, p.label]));
     return (id: string) => m.get(id) ?? id;
@@ -91,8 +88,7 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
   }, [decoded, bundle.network, index]);
   const card = ({ group: g, proposal: p }: Listed, n: number | null) => (
     <Card key={gid(g, p)} p={p} group={g} evidence={proposalNotices(g.computed, loaded).evidence} comparison={g.optionComparisons?.find((c) => c.option === p.id)} comparisonLabel={(id) => g.proposals.find((x) => x.id === id)?.title ?? id} shareUrl={`${location.origin}${pathOfSlug(slugOf(g.id, p.link))}`} onCopyLink={() => onCopyLink(p, g.id)} when={periodsPhrase(g.computed.periods, periodLabel)} hid={gid(g, p)} anchorId={proposalAnchor(g.id, p.id)} n={n} routes={routeCounts.get(gid(g, p)) ?? null} ivs={decoded.get(gid(g, p)) ?? null} searched={g.computed.periods} bundle={bundle} index={index} mode={mode} loaded={loaded} today={today} periodLabel={periodLabel} confirmId={open.step === 'confirm' && (open.id === gid(g, p) || open.id.startsWith(`${gid(g, p)}-v`)) ? open.id : null}
-      onRequest={(v) => request(g, p, v)} onCancel={() => dispatch({ type: 'cancel' })} onConfirm={(v) => { dispatch({ type: 'done' }); onOpen(v === null ? p : variantProposal(p, p.variants![v])); }}
-      onTrace={onTrace && decoded.get(gid(g, p))?.some(canTrace) ? () => onTrace(p, decoded.get(gid(g, p))!) : undefined} />
+      onRequest={(v) => request(g, p, v)} onCancel={() => dispatch({ type: 'cancel' })} onConfirm={(v) => { dispatch({ type: 'done' }); onOpen(v === null ? p : variantProposal(p, p.variants![v])); }} />
   );
 
   const listed = ready && !ready.withdrawn ? listOptions(ready) : { search: [], reference: [] };
@@ -189,11 +185,11 @@ const SHORT_LIST = 3;
 /** Not shortened for display: links, and the map data matched against the network. */
 const DISPLAY_SKIP = new Set(['link', 'id', 'picture', 'pictureAll']);
 
-function Card({ p: raw, group, evidence, comparison, comparisonLabel, shareUrl, onCopyLink, when, hid, anchorId, n, routes, ivs, searched, bundle, index, mode, loaded, today, periodLabel, confirmId, onRequest, onCancel, onConfirm, onTrace }: {
+function Card({ p: raw, group, evidence, comparison, comparisonLabel, shareUrl, onCopyLink, when, hid, anchorId, n, routes, ivs, searched, bundle, index, mode, loaded, today, periodLabel, confirmId, onRequest, onCancel, onConfirm }: {
   p: Proposal; group: ProposalGroup; evidence: EvidenceStatus; comparison: OptionComparison | undefined; comparisonLabel(id: string): string; shareUrl: string; onCopyLink(): void; when: string; hid: string; anchorId: string; n: number | null; routes: number | null; ivs: Intervention[] | null; searched: string[]; bundle: AreaBundle; index: NetIndex; mode: Mode; loaded: LoadedHashes; today: number; periodLabel(id: string): string;
   /** The id of what is asking before it replaces the map's scenario: the option (`hid`) or one of its variants (`hid-v<k>`). */
   confirmId: string | null;
-  onRequest(variant: number | null): void; onCancel(): void; onConfirm(variant: number | null): void; onTrace?(): void;
+  onRequest(variant: number | null): void; onCancel(): void; onConfirm(variant: number | null): void;
 }) {
   const p = useMemo(() => shortStreetsDeep(raw, DISPLAY_SKIP), [raw]);
   const cut = cutThroughHeadline(p.cutThrough, when, group.computed.seeds, bundle.entry.name);
@@ -229,8 +225,7 @@ function Card({ p: raw, group, evidence, comparison, comparisonLabel, shareUrl, 
     confirmId === hid ? confirmBox(null) : (
       <>
         <button type="button" className="btn primary" onClick={ask(null)}>Open on the map<span className="sr-only">: {p.title}</span></button>{' '}
-        <button type="button" className="btn" onClick={onCopyLink}>Copy link<span className="sr-only"> to {p.title}</span></button>{' '}
-        {onTrace && <button type="button" className="btn" onClick={onTrace}>Where traffic goes<span className="sr-only">: {p.title}</span></button>}
+        <button type="button" className="btn" onClick={onCopyLink}>Copy link<span className="sr-only"> to {p.title}</span></button>
       </>
     )
   );
@@ -254,31 +249,14 @@ function Card({ p: raw, group, evidence, comparison, comparisonLabel, shareUrl, 
     return () => ro.disconnect();
   }, []);
   const changes = <ul className="prop-ivs">{p.interventions.map((iv, i) => <li key={i}>{iv.label}</li>)}</ul>;
-  return (
-    <li className="prop-card" aria-labelledby={anchorId}>
-      <div ref={headRef} className="prop-head">
-        <div className="prop-title">
-          <AnchorHeading as="h3" id={anchorId} label={p.title}>{n !== null && <span className="prop-n">{n}. </span>}{p.title}</AnchorHeading>
-          {isRef && <span className="tag">Earlier proposal</span>}
-        </div>
-        <p className="prop-headfig"><span className="fig-num">{cut.figure}</span> {cut.label} <span className="fig-pct">{cut.change}</span></p>
-      </div>
-      {isRef && p.note && <p className="muted prop-note">{p.note}</p>}
-      <div className="prop-figs">
-        {p.accessProblem && <p className="notice err"><strong>Street access check failed.</strong> {p.accessProblem}.</p>}
-        {p.simulationProblem && <p className="notice err"><strong>Simulation validity check failed.</strong> {p.simulationProblem}.</p>}
-        <div className="fig fig-cut">
-          <p className="fig-main"><span className="fig-lead">{cut.lead}</span> <span className="fig-num">{cut.pct}</span> {cut.label} over all side streets ({cut.figure})</p>
-        </div>
-        <div className="fig fig-all">
-          <p className="fig-main">{all.none ? all.label : <><span className="fig-lead">Largest rise on one block:</span> <span className="fig-num">{all.figure}</span> {all.short}</>}</p>
-        </div>
-      </div>
-      {hasPic && <ProposalMap net={bundle.network} index={index} p={raw} group={group} ivs={ivs ?? []} areaId={bundle.entry.id} mode={mode} periodLabel={periodLabel} searchedPeriods={searched} loaded={loaded} onTrace={onTrace} />}
+  const actionRow = (
       <div className="prop-actions">
         {action}
         {hasPic && confirmId !== hid && <DownloadImage net={bundle.network} index={index} p={raw} ivs={ivs ?? []} areaName={bundle.entry.name} areaId={bundle.entry.id} status={calStatusText} openUrl={shareUrl} periodLabel={periodLabel} searchedPeriods={searched} runs={group.computed.seeds} evidence={evidence} />}
       </div>
+  );
+  const more = (
+    <>
       {p.interventions.length <= SHORT_LIST
         ? <div className="prop-changes"><h4 className="prop-h">Changes</h4>{changes}</div>
         : <details className="prop-d"><summary>Changes in this package ({p.interventions.length})</summary>{changes}</details>}
@@ -362,6 +340,31 @@ function Card({ p: raw, group, evidence, comparison, comparisonLabel, shareUrl, 
           <ul>{variants.map((v, k) => variantItem(v, k))}</ul>
         </details>
       )}
+    </>
+  );
+  return (
+    <li className="prop-card" aria-labelledby={anchorId}>
+      <div ref={headRef} className="prop-head">
+        <div className="prop-title">
+          <AnchorHeading as="h3" id={anchorId} label={p.title}>{n !== null && <span className="prop-n">{n}. </span>}{p.title}</AnchorHeading>
+          {isRef && <span className="tag">Earlier proposal</span>}
+        </div>
+        <p className="prop-headfig"><span className="fig-num">{cut.figure}</span> {cut.label} <span className="fig-pct">{cut.change}</span></p>
+      </div>
+      {isRef && p.note && <p className="muted prop-note">{p.note}</p>}
+      <div className="prop-figs">
+        {p.accessProblem && <p className="notice err"><strong>Street access check failed.</strong> {p.accessProblem}.</p>}
+        {p.simulationProblem && <p className="notice err"><strong>Simulation validity check failed.</strong> {p.simulationProblem}.</p>}
+        <div className="fig fig-cut">
+          <p className="fig-main"><span className="fig-lead">{cut.lead}</span> <span className="fig-num">{cut.delta}</span> {cut.label} over all side streets ({cut.figure}) <span className="fig-pct">{cut.pct}</span></p>
+        </div>
+        <div className="fig fig-all">
+          <p className="fig-main">{all.none ? all.label : <><span className="fig-lead">Largest rise on one block:</span> <span className="fig-num">{all.figure}</span> {all.short}</>}</p>
+        </div>
+      </div>
+      {hasPic
+        ? <ProposalMap net={bundle.network} index={index} p={raw} group={group} ivs={ivs ?? []} areaId={bundle.entry.id} mode={mode} periodLabel={periodLabel} searchedPeriods={searched} loaded={loaded} actions={actionRow}>{more}</ProposalMap>
+        : <>{actionRow}{more}</>}
     </li>
   );
 }

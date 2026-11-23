@@ -58,12 +58,10 @@ function useRedistribution(near: boolean, areaId: string, group: ProposalGroup, 
 interface Props {
   net: Network; index: NetIndex; p: Proposal; group: ProposalGroup; ivs: Intervention[]; areaId: string;
   mode: Mode; periodLabel(id: string): string; searchedPeriods: string[]; loaded: LoadedHashes;
-  /** Opens the live "Where traffic goes" view for this proposal. */
-  onTrace?(): void;
 }
 
 /** Light inline-SVG map of one proposal: through cars an hour by block, its changes in place, and what hovering, focusing or tapping them says. */
-export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLabel, searchedPeriods, loaded, onTrace }: Props) {
+export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLabel, searchedPeriods, loaded, actions, children }: Props & { actions?: React.ReactNode; children?: React.ReactNode }) {
   const pic = p.picture!;
   const box = useRef<HTMLDivElement>(null);
   const readoutBox = useRef<HTMLDivElement>(null);
@@ -230,7 +228,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
             {stored && <p className="muted small pm-foot">{redistributionBasis(stored)}</p>}
           </>
         ) : (
-          <p className="small">{missing} {onTrace && <button type="button" className="btn small-btn" onClick={onTrace}>Where traffic goes</button>}</p>
+          <p className="small">{missing}</p>
         )}
       </div>
     );
@@ -335,8 +333,9 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
               {back && sel && <button type="button" className="btn small-btn pm-back" onClick={backToList}>Back to list</button>}
               {readout}
             </div>
+            {actions && <div className="pm-actions">{actions}</div>}
             <details className="prop-d pm-moredetail">
-            <summary>Streets that change, where filtered traffic goes, and the map key</summary>
+            <summary>Streets that change and the map key</summary>
             <div className="pm-streets">
               <h4>Streets that change</h4>
               {ranked.length === 0 ? <p className="muted small">No side-street block changes by a whole car an hour in the {when}.</p> : (
@@ -348,24 +347,6 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
               )}
             </div>
           <div className="pm-aside">
-            {traceable.length > 0 && (
-              <div className="pm-filters">
-                <h4>Where filtered traffic goes</h4>
-                <ul className="pm-goes">
-                  {traceable.map(({ i }) => {
-                    const s: Sel = { kind: 'iv', iv: i };
-                    const it = itemOf(i);
-                    return (
-                      <li key={i} className={rowCls(s)}>
-                        <button type="button" className="pm-link" {...rowProps(s)}>{ivLabel(i)}</button>
-                        {it ? <span className="muted small"> {redistributionLine(it, when)}</span> : redist.status === 'loading' || redist.status === 'idle' ? <span className="muted small"> Loading…</span> : redist.status === 'ok' ? <span className="muted small"> No redirect data for this change.</span> : null}
-                      </li>
-                    );
-                  })}
-                </ul>
-                {(redist.status === 'missing' || redist.status === 'stale') && <p className="small muted">{redist.status === 'stale' ? `The stored redirect data is out of date (${redist.reason}).` : 'No stored redirect data has been published for this proposal.'} {onTrace && <>Run it live with <button type="button" className="btn small-btn" onClick={onTrace}>Where traffic goes</button>.</>}</p>}
-              </div>
-            )}
             <div className="pm-key">
             {(kinds.size > 0 || model.pins.length > 0) && (
               <ul className="pm-keys small muted">
@@ -382,6 +363,26 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
             </div>
           </div>
             </details>
+            {traceable.length > 0 && (
+              <details className="prop-d pm-filters">
+                <summary>Where filtered traffic goes</summary>
+                <p className="muted small">Through cars that used each closed movement today, followed into the proposal's run. Hover or tap a change on the map for its routes.</p>
+                <ul className="pm-goes">
+                  {traceable.map(({ i }) => {
+                    const s: Sel = { kind: 'iv', iv: i };
+                    const it = itemOf(i);
+                    return (
+                      <li key={i} className={rowCls(s)}>
+                        <button type="button" className="pm-link" {...rowProps(s)}>{ivLabel(i)}</button>
+                        {it ? <span className="muted small"> {shortStreets(redistributionLine(it, when))}</span> : redist.status === 'loading' || redist.status === 'idle' ? <span className="muted small"> Loading…</span> : redist.status === 'ok' ? <span className="muted small"> No redirect data for this change.</span> : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+                {(redist.status === 'missing' || redist.status === 'stale') && <p className="small muted">{redist.status === 'stale' ? `The stored redirect data is out of date (${redist.reason}).` : 'No stored redirect data has been published for this proposal.'}</p>}
+              </details>
+            )}
+            {children && <div className="pm-extra">{children}</div>}
           </div>
         </div>
         {sel && !mapSeen && tipText && (
