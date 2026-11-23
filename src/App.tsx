@@ -417,6 +417,7 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
     say(msg);
   }, [say]);
   const onRemove = useCallback((i: number) => { setInterventions((c) => c.filter((_, j) => j !== i)); say('Intervention removed.'); }, [say]);
+  const onRemoveMany = useCallback((indices: number[]) => { const gone = new Set(indices); setInterventions((c) => c.filter((_, j) => !gone.has(j))); say(`${indices.length} interventions removed.`); }, [say]);
   const onClear = useCallback(() => { setInterventions([]); say('All interventions cleared.'); }, [say]);
 
   // --- selection: pick a place first, then act on it
@@ -519,7 +520,7 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
   const scenarioPanel = (
     <>
       <InterventionPanel bundle={bundle} index={index} region={region} showService={showService} onShowService={setShowService} interventions={interventions}
-        onRemove={onRemove} onClear={onClear} onChoose={select} onHover={setHoverPlace} onSelectIntervention={onSelectIntervention}
+        onRemove={onRemove} onRemoveMany={onRemoveMany} onClear={onClear} onChoose={select} onHover={setHoverPlace} onSelectIntervention={onSelectIntervention}
         onTrace={(i) => setRedist({ package: interventions, closure: i, source: 'scenario', title: 'your scenario' })}
         menuTop={placement === 'sheet' ? menu : null} menuInline={placement === 'inline' ? menu : null} shareSlot={shareButton}
         routes={{ check: routeCheck, today: todayRoutes.total, show: showRoutes, onShow: setShowRoutes, onHighlight: setHotRoute, mode }} />

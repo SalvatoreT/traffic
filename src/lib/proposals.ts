@@ -54,7 +54,10 @@ export interface Proposal {
   /** Absent means "search". Reference entries are hand-defined packages evaluated with the same metrics. */
   kind?: 'search' | 'reference'; note?: string;
   link: string;
-  interventions: { type: string; label: string }[];
+  /** One entry per change. A ban set is one change that holds `bans` individual turn bans; its link lists every one of them. `bans` is absent in files written before ban sets. */
+  interventions: { type: string; label: string; bans?: number }[];
+  /** Individual turn bans in the package, singles and ban sets together. Present only when the package holds a ban set. */
+  turnBans?: number;
   /** Through cars an hour across the area's side streets, averaged over the searched periods and the seeds. */
   cutThrough: CutThrough;
   /** Through cars only, averaged over the same periods and seeds. */
@@ -658,6 +661,25 @@ export function compareOptions(a: Proposal, b: Proposal): number {
     || tenths(largestAllCarRise(a)) - tenths(largestAllCarRise(b));
 }
 
+/** The scenario-link items a change decodes to: one, or one per turn ban for a ban set. */
+export const slotsOf = (iv: { bans?: number }) => iv.bans ?? 1;
+
+/** The change whose label belongs to the i-th decoded intervention of the package's link (a ban set decodes to one intervention for each ban). */
+export function changeAt(interventions: Proposal['interventions'], i: number): Proposal['interventions'][number] | undefined {
+  let at = 0;
+  for (const iv of interventions) {
+    at += slotsOf(iv);
+    if (i < at) return iv;
+  }
+  return undefined;
+}
+
+/** "Changes in this package (2, holding 22 turn bans)": the count of changes, and the individual bans when a ban set hides them. */
+export function changesSummary(p: Pick<Proposal, 'interventions' | 'turnBans'>): string {
+  const n = p.interventions.length;
+  return p.turnBans !== undefined && p.interventions.some((iv) => iv.bans !== undefined) ? `${n}, holding ${p.turnBans} turn bans` : `${n}`;
+}
+
 export interface Listed { group: ProposalGroup; proposal: Proposal }
 /**
  * The file's options as one list in the published order, whatever order and however many groups the file has. A package that two groups
@@ -685,6 +707,8 @@ export const OBJECTIVE_LABELS: Record<string, string> = {
   'no-closures': 'no street closures',
   'least-detour': 'least detour for residents',
   'fewest-changes': 'fewest changes',
+  'no-turn-bans': 'no turn restrictions',
+  'most-removed-no-turn-bans': 'most cut-through removed without turn restrictions',
 };
 
 type ObjectiveEvidence = Pick<Proposal, 'objectives' | 'simulationProblem' | 'accessProblem' | 'residentsDetour'>;
@@ -718,4 +742,25 @@ export function detourText(d: ResidentsDetour | undefined): { figure: string; la
   const figure = `${s < 0 ? MINUS : s > 0 ? '+' : ''}${num(Math.abs(s), 1)} s`;
   const total = `${d.vehicleMinutesPerHour < 0 ? MINUS : '+'}${num(Math.abs(d.vehicleMinutesPerHour), 0)} vehicle-minutes an hour`;
   return { figure, label: window ? 'per requested resident trip' : 'per resident trip', detail: `${total}. ${scope} ${intervalText(d.effect, ' s', 1)}` };
+}
+
+/** Individual turn bans in a package: a ban set counts every ban it holds, a single ban counts one. */
+export function banCount(p: Pick<Proposal, 'interventions' | 'turnBans'>): number {
+  return p.turnBans ?? p.interventions.filter((iv) => iv.type === 'turn_ban').length;
+}
+
+/** The standing caveat shown wherever a package with turn bans has its headline. */
+export const BAN_CAVEAT = 'Turn bans apply to every driver, residents included, all day, and assume full compliance.';
+
+/** The scale line of a package with turn bans, so it cannot be read as a small change: "41 turn restrictions around the edge of the area". Null for a package without any. */
+export function banHeadline(p: Pick<Proposal, 'interventions' | 'turnBans'>): { count: number; text: string; caveat: string } | null {
+  const count = banCount(p);
+  return count > 0 ? { count, text: `${count} turn ${count === 1 ? 'restriction' : 'restrictions'} around the edge of the area`, caveat: BAN_CAVEAT } : null;
+}
+
+/** The resident detour for the visible part of every card: "Resident detour: +16.0 s per requested resident trip". Null when the file recorded none. */
+export function detourHeadline(d: ResidentsDetour | undefined): { lead: string; figure: string; label: string } | null {
+  const t = detourText(d);
+  if (!t) return null;
+  return t.figure === 'Unavailable' ? { lead: 'Resident detour:', figure: 'unavailable', label: '' } : { lead: 'Resident detour:', figure: t.figure, label: t.label };
 }

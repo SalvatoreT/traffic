@@ -38,7 +38,7 @@ export interface MapSymbols {
   reason: boolean;
 }
 export type LegendSymbol = SignType | MapPicto;
-const ORDER: LegendSymbol[] = ['speed_hump', 'speed_limit', 'slow_street', 'traffic_circle', 'stop', 'all_way_stop', 'signal', 'uncontrolled', 'signal_timing', 'one_way', 'turn_ban_left', 'turn_ban_right', 'turn_ban'];
+const ORDER: LegendSymbol[] = ['speed_hump', 'speed_limit', 'slow_street', 'traffic_circle', 'stop', 'all_way_stop', 'signal', 'uncontrolled', 'signal_timing', 'one_way', 'turn_ban_left', 'turn_ban_right', 'turn_ban_both', 'turn_ban'];
 
 /** The kinds in the legend's fixed order, each once. */
 export const orderSymbols = (kinds: Iterable<LegendSymbol>): LegendSymbol[] => { const s = new Set(kinds); return ORDER.filter((t) => s.has(t)); };
@@ -60,6 +60,7 @@ const PICTURE_NAME: Record<MapPicto, string> = {
   one_way: 'Black sign with a white arrow',
   turn_ban_left: 'Left-turn arrow in a red slashed circle',
   turn_ban_right: 'Right-turn arrow in a red slashed circle',
+  turn_ban_both: 'Left and right arrows in a red slashed circle',
   turn_ban: 'U-turn arrow in a red slashed circle',
 };
 const PICTURE_MEANING: Record<MapPicto, string> = {
@@ -73,6 +74,7 @@ const PICTURE_MEANING: Record<MapPicto, string> = {
   one_way: 'one-way street, the arrow points the way cars may go',
   turn_ban_left: 'left turn banned',
   turn_ban_right: 'right turn banned',
+  turn_ban_both: 'left and right turns banned at this intersection',
   turn_ban: 'U-turn or straight-on movement banned',
 };
 /** `label` is the key's words; `sign` is the mph of a speed-limit sign drawn as the key's symbol, where the kind is one; `picto` names the picture otherwise. */

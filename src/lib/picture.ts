@@ -1,7 +1,10 @@
 import type { Intervention, Network, Overlay } from '../types';
 import { DEAD_BAND_CUTTHROUGH, DEAD_BAND_FLOW, softChange } from './change';
 import type { SignType } from './mapexport';
+import { banMarks } from './bans';
 import { pictoOf, rotationOfHeading, symbolOf, type MapPicto } from './signs';
+
+const BAN_MARK_PICTO: Record<'left' | 'right' | 'many' | 'other', MapPicto> = { left: 'turn_ban_left', right: 'turn_ban_right', many: 'turn_ban_both', other: 'turn_ban' };
 import { speedSign } from './slowstreet';
 import { barPx, blockBar, filterLegs, legBars } from './blocked';
 import { pointAlong } from './geom';
@@ -241,6 +244,7 @@ export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: Pr
 
   const marks: Mark[] = [];
   const at = (x: number, y: number) => ({ x, y: -y });
+  const merged = banMarks(ivs, net);
   ivs.forEach((iv, ivi) => {
     switch (iv.type) {
       case 'modal_filter':
@@ -261,9 +265,14 @@ export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: Pr
         break;
       }
       case 'traffic_circle': case 'control': case 'signal_timing': { const n = net.nodes[iv.node]; const id = pictoOf(symbolOf(iv, net)) as MapPicto | null; if (n && id) marks.push({ kind: 'picto', picto: id, ...at(n.x, n.y), rotate: 0, iv: ivi }); break; }
-      case 'turn_ban': { const a = net.links[iv.fromLink]; const n = a ? net.nodes[a.to] : undefined; const id = pictoOf(symbolOf(iv, net)) as MapPicto | null; if (n && id) marks.push({ kind: 'picto', picto: id, ...at(n.x, n.y), rotate: 0, iv: ivi }); break; }
+      case 'turn_ban': { if (merged) break; const a = net.links[iv.fromLink]; const n = a ? net.nodes[a.to] : undefined; const id = pictoOf(symbolOf(iv, net)) as MapPicto | null; if (n && id) marks.push({ kind: 'picto', picto: id, ...at(n.x, n.y), rotate: 0, iv: ivi }); break; }
     }
   });
+
+  for (const m of merged ?? []) {
+    const n = net.nodes[m.node];
+    if (n) marks.push({ kind: 'picto', picto: BAN_MARK_PICTO[m.turn], ...at(n.x, n.y), rotate: 0, iv: m.index });
+  }
 
   const bar0 = barPx(BAR_ZOOM);
   const pins: Pin[] = [];

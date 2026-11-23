@@ -3,6 +3,7 @@
 //! The `explore` binary is a thin wrapper; the logic lives here so tests can run it on small synthetic networks.
 
 pub mod annotate;
+pub mod bansets;
 pub mod bench;
 pub mod bypass;
 pub mod cands;
@@ -93,6 +94,8 @@ pub struct Params {
     pub bypass_locations: usize,
     /// EXPERIMENTAL: supplementary search moves after the beams (`supplement::run`); empty is off, the default.
     pub supplement: Vec<supplement::Move>,
+    /// Ban sets (`bansets`) join the candidates, each counting as one intervention. Off by default: the candidate list and every output are then unchanged.
+    pub ban_sets: bool,
     pub out: Option<PathBuf>,
     pub report: Option<PathBuf>,
 }
@@ -124,6 +127,7 @@ impl Params {
             known_dropped: Vec::new(),
             bypass_locations: 0,
             supplement: Vec::new(),
+            ban_sets: false,
             out: None,
             report: None,
         }

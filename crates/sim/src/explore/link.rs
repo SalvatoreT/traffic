@@ -151,6 +151,7 @@ fn block_point(net: &Network, id: u32) -> Option<(f64, f64)> {
 
 /// Link fragment (`#v1;a=...`) for a set of interventions. `area` is the area id, `period` the demand period to open on.
 pub fn encode_scenario(net: &Network, origin: (f64, f64), ivs: &[Intervention], area: &str, period: Option<&str>) -> String {
+    let ivs = &super::bansets::flatten(ivs)[..];
     let proj = Proj::new(origin.0, origin.1);
     let pt = |xy: Option<(f64, f64)>| -> Option<String> {
         let (x, y) = xy?;

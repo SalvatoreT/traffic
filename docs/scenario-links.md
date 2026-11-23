@@ -18,6 +18,8 @@ Everything after the first `#` is the link. It is a list of tokens separated by 
 | `d=<scale>` | Demand scale, 0.1 to 3. Left out when it is 1. | no |
 | `s=<items>` | The interventions, joined by `~`, at most 200. Left out for the baseline. | no |
 
+A package with a ban set lists every turn ban as its own `tb` item: the 41 bans of the whole-perimeter set make a link of about 1,000 characters with five other changes. The Map tab folds six or more turn bans into one scenario entry with one Remove.
+
 `#v1` alone is valid and means the baseline. Tokens other than these are ignored. A link that cannot be decoded (wrong version, wrong area, a bad code, a geohash that is not 10 characters, a parameter out of range) opens nothing and is reported as invalid; the CLI exits with code 2 and says which part is wrong.
 
 ## Items

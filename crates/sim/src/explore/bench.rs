@@ -128,6 +128,7 @@ impl Case {
         p.minutes = self.full.minutes;
         p.screen_minutes = self.screen[0].minutes;
         p.jobs = jobs;
+        p.objectives = objectives::BENCHMARK.to_vec();
         p
     }
 
@@ -499,7 +500,7 @@ pub fn screen_table(res: &Results, case: &Case, spec: &RunSpec) -> ScreenTable {
 /// The finalists production forwards to the recheck: `pick_finalists` and each other objective's own finalists.
 pub fn finalists(ctx: &Ctx, st: &SearchState, known: &[Vec<u16>]) -> Vec<usize> {
     let mut ids = pick_finalists(&st.evals, ctx.p.finalists, known);
-    for &obj in ctx.p.objectives.iter().filter(|o| **o != Objective::MostRemoved) {
+    for &obj in ctx.p.objectives.iter().filter(|o| **o != Objective::MostRemoved && o.has_beam()) {
         for i in pick_finalists_for(ctx, &st.evals, (ctx.p.finalists / 3).max(3), &BeamLimit::for_objective(obj, ctx.p, ctx.cands)) {
             if !ids.iter().any(|&j| st.evals[j].set == st.evals[i].set) {
                 ids.push(i);
@@ -520,7 +521,7 @@ pub fn finalists(ctx: &Ctx, st: &SearchState, known: &[Vec<u16>]) -> Vec<usize> 
 pub fn production_beam(ctx: &Ctx, st: &mut SearchState, known: &[Vec<u16>]) {
     let fams: Vec<Family> = known.iter().map(|s| Family::new(s)).collect();
     beam_search_in(ctx, &fams, &BeamLimit::main(ctx.p), st);
-    for &obj in ctx.p.objectives.iter().filter(|o| **o != Objective::MostRemoved) {
+    for &obj in ctx.p.objectives.iter().filter(|o| **o != Objective::MostRemoved && o.has_beam()) {
         if st.exhausted {
             break;
         }
@@ -553,6 +554,7 @@ pub fn objective_best<'a>(cands: &[Cand], pool: &[&'a Eval], obj: Objective, flo
                 Objective::NoClosures => e.set.iter().all(|&c| objectives::closes_nothing(&cands[c as usize])),
                 Objective::FewestChanges => e.set.len() <= objectives::FEWEST_MAX_CHANGES,
                 Objective::LeastDetour => e.detour_s.is_some() && e.reduction_pct >= floor,
+                Objective::NoTurnBans | Objective::MostRemovedNoTurnBans => e.set.iter().all(|&c| !objectives::is_ban(&cands[c as usize])),
             }
     };
     let tie = |a: &Eval, b: &Eval| b.set.len().cmp(&a.set.len()).then(b.set.cmp(&a.set));
@@ -577,7 +579,7 @@ pub fn assess(ctx: &Ctx, st: &SearchState, known: &[Vec<u16>], table: &ScreenTab
     let all_full: Vec<&Eval> = full.values().collect();
     let fin_full: Vec<&Eval> = fin_sets.iter().filter_map(|s| full.get(s)).collect();
     let floor = detour_floor(&all_full);
-    let per_obj: Vec<Value> = objectives::ALL
+    let per_obj: Vec<Value> = objectives::BENCHMARK
         .iter()
         .map(|&obj| {
             let best = objective_best(ctx.cands, &all_full, obj, floor);
@@ -702,7 +704,7 @@ fn replay_on(study: &Study, case: &Case, cands: &[Cand], table: Arc<ScreenTable>
     let mut stages = Vec::new();
     let mut matches = true;
     let fams: Vec<Family> = Vec::new();
-    for (k, &obj) in p.objectives.iter().enumerate() {
+    for (k, &obj) in p.objectives.iter().filter(|o| o.has_beam()).enumerate() {
         let lim = if obj == Objective::MostRemoved { BeamLimit::main(&p) } else { BeamLimit::for_objective(obj, &p, &cands) };
         beam_search_in(&ctx, &fams, &lim, &mut st);
         let got: Vec<&Vec<u16>> = st.evals.iter().map(|e| &e.set).collect();
@@ -875,7 +877,7 @@ pub fn analyze(study: &Study, case: &Case, res: &Results) -> Value {
                 "group": name, "candidates": ok,
                 "screenBest": best(primary.rows.values().map(|r| &r.0).collect()),
                 "fullHourBest": best(full.values().collect()),
-                "objectives": objectives::ALL.iter().map(|&o| json!({"objective": o.id(), "best": objective_best(&cands, &fl, o, floor).map(|e| json!({"set": e.set, "score": e.score, "detourS": e.detour_s}))})).collect::<Vec<_>>(),
+                "objectives": objectives::BENCHMARK.iter().map(|&o| json!({"objective": o.id(), "best": objective_best(&cands, &fl, o, floor).map(|e| json!({"set": e.set, "score": e.score, "detourS": e.detour_s}))})).collect::<Vec<_>>(),
             })
         })
         .collect();

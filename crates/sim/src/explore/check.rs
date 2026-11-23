@@ -12,15 +12,16 @@ use super::*;
 /// every non-empty subset (one period, one seed, shortened run), which shows whether a beam could reach the package.
 pub fn check_links(study: &Study, p: &Params, links: &[String], subsets: bool, singles: bool) {
     let base = run_baseline(study, p);
-    let mut cands = super::cands::generate_for(study, &base.hot, p.candidates, &p.profile, p.periods.iter().map(String::as_str));
+    let mut cands = super::cands::generate_search(study, &base.hot, p);
     let n_gen = cands.len();
     println!("candidate list: {n_gen} candidates under profile {}", p.profile.id);
     for (i, c) in cands.iter().enumerate() {
         println!("  candidate {} [{}] {}", i + 1, c.kind, c.label);
     }
     let mut sets: Vec<Vec<u16>> = Vec::new();
+    let ban_sets = if p.ban_sets { super::bansets::generate(study, &p.periods.iter().map(String::as_str).collect::<Vec<_>>()).sets } else { Vec::new() };
     for link in links {
-        let ivs = match decode_scenario(&study.net, &study.topo, study.origin, link) {
+        let ivs = match decode_scenario(&study.net, &study.topo, study.origin, link).map(|v| super::bansets::collapse(&ban_sets, v)) {
             Ok(v) => v,
             Err(e) => {
                 println!("\n{link}\n  does not decode: {e}");

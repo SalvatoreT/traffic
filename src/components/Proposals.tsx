@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { AreaBundle, Intervention } from '../types';
 import { decodeScenario } from '../lib/hash';
+import { groupBans } from '../lib/bans';
 import type { Mode } from '../lib/ramps';
 import { DownloadImage } from './DownloadImage';
 import { ProposalMap } from './ProposalMap';
@@ -12,7 +13,7 @@ import { checkThroughRoutes, ROUTE_CAVEAT } from '../lib/throughroutes';
 import { buildMockProposals } from '../fixtures/proposals';
 import { shortStreetsDeep } from '../lib/streets';
 import {
-  allTrafficHeadline, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, detourText, evidenceNote, fetchProposals, formatComputed, harmHeadline, INTERVAL_SCOPE, intervalText, periodsPhrase,
+  allTrafficHeadline, allTrafficNote, banCount, banHeadline, changesSummary, detourHeadline, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, detourText, evidenceNote, fetchProposals, formatComputed, harmHeadline, INTERVAL_SCOPE, intervalText, periodsPhrase,
   linkHash, listOptions, needsConfirm, objectiveTags, openReducer, parseProposals, proposalAnchor, provenanceLine, proposalNotices, proposalsUrl, seedsPhrase, signedNum, signedPct,
   type EvidenceStatus, type Listed, type LoadedHashes, type OptionComparison, type Proposal, type ProposalGroup, type ProposalsState, type Variant,
 } from '../lib/proposals';
@@ -210,6 +211,9 @@ function Card({ p: raw, group, evidence, comparison, comparisonLabel, shareUrl, 
   const isRef = p.kind === 'reference';
   const tags = objectiveTags(p);
   const detour = detourText(p.residentsDetour);
+  const rd = detourHeadline(p.residentsDetour);
+  const ban = banHeadline(p);
+  const banGroups = useMemo(() => (ban && ivs ? groupBans(ivs, bundle.network, index) : []), [ban, ivs, bundle.network, index]);
   const calStatusText = calibrationStatusText(bundle.entry.calibration);
   const hasPic = !!p.picture && ivs !== null;
   const variants = p.variants ?? [];
@@ -248,7 +252,7 @@ function Card({ p: raw, group, evidence, comparison, comparisonLabel, shareUrl, 
     ro.observe(head);
     return () => ro.disconnect();
   }, []);
-  const changes = <ul className="prop-ivs">{p.interventions.map((iv, i) => <li key={i}>{iv.label}</li>)}</ul>;
+  const changes = <ul className="prop-ivs">{p.interventions.map((iv, i) => <li key={i}>{iv.label}{iv.bans !== undefined && <span className="muted">. One change, {iv.bans} individual turn bans.</span>}</li>)}</ul>;
   const actionRow = (
       <div className="prop-actions">
         {action}
@@ -258,8 +262,20 @@ function Card({ p: raw, group, evidence, comparison, comparisonLabel, shareUrl, 
   const more = (
     <>
       {p.interventions.length <= SHORT_LIST
-        ? <div className="prop-changes"><h4 className="prop-h">Changes</h4>{changes}</div>
-        : <details className="prop-d"><summary>Changes in this package ({p.interventions.length})</summary>{changes}</details>}
+        ? <div className="prop-changes"><h4 className="prop-h">Changes{p.turnBans !== undefined ? ` (${changesSummary(p)})` : ''}</h4>{changes}</div>
+        : <details className="prop-d"><summary>Changes in this package ({changesSummary(p)})</summary>{changes}</details>}
+      {banGroups.length > 0 && (
+        <details className="prop-d prop-bans">
+          <summary>Every turn restriction, by the street it starts on ({banCount(p)})</summary>
+          <p className="muted small">{ban?.caveat}</p>
+          {banGroups.map((g) => (
+            <section key={g.street} aria-label={`From ${g.street}`}>
+              <h4 className="prop-h">From {g.street} <span className="count">{g.bans.length}</span></h4>
+              <ul className="prop-banlist">{g.bans.map((b) => <li key={b.index}>{b.text}</li>)}</ul>
+            </section>
+          ))}
+        </details>
+      )}
       <details className="prop-d">
         <summary>In words, and where these figures come from</summary>
         <p className="small">{p.summary}</p>
@@ -327,8 +343,7 @@ function Card({ p: raw, group, evidence, comparison, comparisonLabel, shareUrl, 
         {routes !== null && <p className="small">Through routes: <strong>{routes}</strong> ({today} today)</p>}
         {detour && (
           <>
-            <h4>Resident detour</h4>
-            <p className="small"><strong>{detour.figure}</strong> {detour.label}</p>
+            <h4>Resident detour, in detail</h4>
             <p className="muted small">{detour.detail}</p>
           </>
         )}
@@ -350,9 +365,16 @@ function Card({ p: raw, group, evidence, comparison, comparisonLabel, shareUrl, 
           {isRef && <span className="tag">Earlier proposal</span>}
         </div>
         <p className="prop-headfig"><span className="fig-num">{cut.figure}</span> {cut.label} <span className="fig-pct">{cut.change}</span></p>
+        {rd && <p className="prop-headsub"><span className="prop-headsub-lead">{rd.lead}</span> <strong>{rd.figure}</strong>{rd.label && ` ${rd.label}`}</p>}
       </div>
       {isRef && p.note && <p className="muted prop-note">{p.note}</p>}
       <div className="prop-figs">
+        {ban && (
+          <div className="prop-ban">
+            <p className="prop-scale"><strong>{ban.text}</strong></p>
+            <p className="notice prop-banwarn" role="note"><strong>Assumption.</strong> {ban.caveat}</p>
+          </div>
+        )}
         {p.accessProblem && <p className="notice err"><strong>Street access check failed.</strong> {p.accessProblem}.</p>}
         {p.simulationProblem && <p className="notice err"><strong>Simulation validity check failed.</strong> {p.simulationProblem}.</p>}
         <div className="fig fig-cut">

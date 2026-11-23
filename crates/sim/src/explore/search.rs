@@ -579,7 +579,7 @@ impl BeamLimit {
     }
 
     pub fn for_objective(obj: Objective, p: &Params, cands: &[Cand]) -> BeamLimit {
-        let allowed = if obj == Objective::NoClosures { Some(super::objectives::allowed(obj, cands)) } else { None };
+        let allowed = if matches!(obj, Objective::NoClosures | Objective::NoTurnBans) { Some(super::objectives::allowed(obj, cands)) } else { None };
         BeamLimit { objective: obj, allowed, depth: super::objectives::depth(obj, p) }
     }
 
@@ -840,5 +840,5 @@ fn pick_finalists_capped(evals: &[Eval], cap: usize) -> Vec<usize> {
 }
 
 pub fn make_cands(study: &Study, base: &Baseline, p: &Params) -> Vec<Cand> {
-    super::cands::generate_for(study, &base.hot, p.candidates, &p.profile, p.periods.iter().map(String::as_str))
+    super::cands::generate_search(study, &base.hot, p)
 }

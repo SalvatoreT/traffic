@@ -66,6 +66,8 @@ pub struct Final {
     pub detour_coverage: DetourCoverage,
     /// Some intervention in the package closes a street or an intersection to cars (a modal filter or a diverter).
     pub closes: bool,
+    /// Some intervention in the package is a turn ban or a ban set.
+    pub has_bans: bool,
     /// The objectives this package is the best for in the published list (set when it is chosen).
     pub objectives: Vec<super::objectives::Objective>,
 }
@@ -434,6 +436,7 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
         detour_vmin_h,
         detour_coverage: coverage,
         closes: set.iter().any(|&i| !super::objectives::closes_nothing(&ctx.cands[i as usize])),
+        has_bans: set.iter().any(|&i| super::objectives::is_ban(&ctx.cands[i as usize])),
         objectives: Vec::new(),
     }
 }
@@ -474,6 +477,7 @@ impl Default for Final {
             detour_vmin_h: None,
             detour_coverage: Default::default(),
             closes: false,
+            has_bans: false,
             objectives: Vec::new(),
         }
     }
@@ -718,6 +722,9 @@ pub fn objective_winner(finals: &[Final], obj: Objective, keep: &[usize]) -> Opt
         let lowest = above.iter().copied().min_by(|&a, &b| finals[a].detour_s.partial_cmp(&finals[b].detour_s).unwrap_or(std::cmp::Ordering::Equal).then(by_removed(b, a)))?;
         return above.iter().copied().filter(|&c| c == lowest || !detour_lower(&finals[lowest], &finals[c])).max_by(|&a, &b| by_removed(a, b));
     }
+    if obj == Objective::MostRemovedNoTurnBans {
+        return keep.iter().copied().max_by(|&a, &b| by_removed(a, b));
+    }
     keep.iter().copied().max_by(|&a, &b| finals[a].score.partial_cmp(&finals[b].score).unwrap_or(std::cmp::Ordering::Equal).then(finals[b].set.len().cmp(&finals[a].set.len())).then(b.cmp(&a)))
 }
 
@@ -917,9 +924,19 @@ pub fn select_by_objectives(finals: &[Final], p: &Params, max: usize) -> (Vec<Pi
             None => break extra,
         }
     };
+    // With no turn ban in the list there is nothing to contrast with, so the no-turn-bans tags are left off.
+    if !chosen.iter().map(|c| c.0).chain(extra.iter().copied()).any(|i| finals[i].has_bans) {
+        for c in chosen.iter_mut() {
+            c.1.retain(|o| !o.is_no_ban());
+        }
+    }
     let mut picks: Vec<Pick> = chosen
         .into_iter()
-        .map(|(idx, objs)| Pick { idx, why: format!("best for {}", objs.iter().map(|o| o.label()).collect::<Vec<_>>().join(" and ")), objectives: objs })
+        .map(|(idx, objs)| Pick {
+            idx,
+            why: if objs.is_empty() { "next best by through cars removed".into() } else { format!("best for {}", objs.iter().map(|o| o.label()).collect::<Vec<_>>().join(" and ")) },
+            objectives: objs,
+        })
         .chain(extra.into_iter().map(|idx| Pick { idx, why: "next best by through cars removed".into(), objectives: Vec::new() }))
         .collect();
     picks.sort_by(|a, b| similar::order_options(&finals[a.idx], &finals[b.idx]).then(a.idx.cmp(&b.idx)));
@@ -1001,8 +1018,22 @@ fn kind_group(kind: &str) -> &str {
     }
 }
 
+/// " (N individual turn bans in all)" for a package that holds a ban set, else nothing (so output without ban sets is unchanged).
+pub fn bans_note(cands: &[Cand], set: &[u16]) -> String {
+    let ivs: Vec<Intervention> = set.iter().map(|&i| cands[i as usize].iv.clone()).collect();
+    if ivs.iter().any(|iv| iv.ty == super::bansets::TYPE) {
+        format!(" ({} individual turn bans in all)", super::bansets::ban_count(&ivs))
+    } else {
+        String::new()
+    }
+}
+
 /// A plain title built from the package's contents, such as "Two filters on Hillegass and Colby".
 pub fn title(cands: &[Cand], set: &[u16]) -> String {
+    if let Some(s) = set.iter().map(|&i| &cands[i as usize]).find(|c| c.kind == super::bansets::KIND) {
+        let rest = set.len() - 1;
+        return if rest == 0 { s.label.clone() } else { format!("{}, plus {} other {}", s.label, number_word(rest), if rest == 1 { "change" } else { "changes" }) };
+    }
     let mut groups: Vec<(&str, Vec<&Cand>)> = Vec::new();
     for &i in set {
         let c = &cands[i as usize];
@@ -1067,7 +1098,9 @@ pub fn summary(study: &Study, cands: &[Cand], f: &Final) -> String {
     let labels: Vec<String> = f.set.iter().map(|&i| cands[i as usize].label.clone()).collect();
     let shown: Vec<String> = labels.iter().take(4).enumerate().map(|(k, l)| if k == 0 { l.clone() } else { lower_first(l) }).collect();
     let more = if n > 4 { format!(", and {} more", n - 4) } else { String::new() };
-    let s1 = format!("It makes {} {}: {}{}.", number_word(n), if n == 1 { "change" } else { "changes" }, shown.join("; "), more);
+    let sets: Vec<Intervention> = f.set.iter().map(|&i| cands[i as usize].iv.clone()).collect();
+    let in_sets = if sets.iter().any(|iv| iv.ty == super::bansets::TYPE) { format!(" The package holds {} individual turn bans in all.", super::bansets::ban_count(&sets)) } else { String::new() };
+    let s1 = format!("It makes {} {}: {}{}.{in_sets}", number_word(n), if n == 1 { "change" } else { "changes" }, shown.join("; "), more);
     let seeds = f.effect.n;
     let s2 = format!(
         "In the simulation it {} through traffic on the area's side streets by {:.0}%, from {:.0} to {:.0} through cars an hour (mean of {} seed{} and of the periods searched; {}).",
@@ -1182,7 +1215,7 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
     eprintln!("baseline: {} period(s) x {} seed(s) at {} min, plus {} screening run(s) at {} min", p.periods.len(), p.seeds.len(), p.minutes, p.seeds.len(), p.screen_minutes);
     let base = run_baseline(study, p);
     eprintln!("baseline done in {:.0}s; cut-through {}", t0.elapsed().as_secs_f64(), p.periods.iter().zip(&base.full).map(|(n, s)| format!("{n} {:.0} veh/h", s.ct_vph)).collect::<Vec<_>>().join(", "));
-    let mut cands = super::cands::generate_for(study, &base.hot, p.candidates, &p.profile, p.periods.iter().map(String::as_str));
+    let mut cands = super::cands::generate_search(study, &base.hot, p);
     if p.bypass_locations > 0 {
         let sup = super::bypass::supplement(study, &p.periods[0], &cands, &p.profile, p.bypass_locations);
         eprintln!("bypass supplement (experimental): {} candidate(s) at up to {} location(s)", sup.added.len(), p.bypass_locations);
@@ -1220,7 +1253,7 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
     let ctx = Ctx { study, p, cands: &cands, base: &base };
     let mut state = beam_search(&ctx, &families);
     // Each other objective grows its own beam over the shared screening cache: singles and packages already screened are reused.
-    let others: Vec<Objective> = p.objectives.iter().copied().filter(|o| *o != Objective::MostRemoved).collect();
+    let others: Vec<Objective> = p.objectives.iter().copied().filter(|o| *o != Objective::MostRemoved && o.has_beam()).collect();
     for &obj in &others {
         let lim = BeamLimit::for_objective(obj, p, &cands);
         let before = state.used;
@@ -1274,6 +1307,7 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
                 "diagonal_diverter" => "diagonal_diverter",
                 "one_way" => "one_way",
                 "turn_ban" => "turn_ban",
+                "ban_set" => "ban_set",
                 "speed_hump" => "speed_hump",
                 "traffic_circle" => "traffic_circle",
                 "speed_limit" => "speed_limit",
@@ -1563,7 +1597,14 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, sh
             "title": title,
             "summary": summary(study, cands, f),
             "link": study.encode(&ivs, Some(&p.periods[0])),
-            "interventions": f.set.iter().map(|&i| json!({"type": cands[i as usize].iv.ty, "label": cands[i as usize].label})).collect::<Vec<_>>(),
+            "interventions": f.set.iter().map(|&i| {
+                let c = &cands[i as usize];
+                if c.iv.ty == super::bansets::TYPE {
+                    json!({"type": c.iv.ty, "label": c.label, "bans": super::bansets::ban_count(std::slice::from_ref(&c.iv))})
+                } else {
+                    json!({"type": c.iv.ty, "label": c.label})
+                }
+            }).collect::<Vec<_>>(),
             "cutThrough": {
                 "baselineVehPerHour": r1(f.base_vph), "scenarioVehPerHour": r1(f.scen_vph), "changePct": r1(-f.reduction_pct),
                 "effect": effect_json(&f.effect),
@@ -1605,6 +1646,9 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, sh
         }
         if f.reject.is_none() && !f.objectives.is_empty() {
             v["objectives"] = json!(f.objectives.iter().map(|o| o.id()).collect::<Vec<_>>());
+        }
+        if f.set.iter().any(|&i| cands[i as usize].iv.ty == super::bansets::TYPE) {
+            v["turnBans"] = json!(super::bansets::ban_count(&ivs));
         }
         if let Some(n) = note {
             v["note"] = json!(n);
@@ -1774,7 +1818,7 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
             md,
             "| {} | {} | {} | {:+.1}% | {} | {} ({:+.0}) | {} | {} | {} ({:+.0}) | {} | {} |",
             i + 1,
-            f.set.iter().map(|&c| cands[c as usize].label.clone()).collect::<Vec<_>>().join("; "),
+            format!("{}{}", f.set.iter().map(|&c| cands[c as usize].label.clone()).collect::<Vec<_>>().join("; "), bans_note(cands, &f.set)),
             f.origin.kind,
             -f.reduction_pct,
             interval_phrase(&f.effect),

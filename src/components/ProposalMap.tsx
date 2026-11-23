@@ -8,7 +8,7 @@ import { speedSignElement } from '../lib/speedsign';
 import type { NetIndex } from '../lib/naming';
 import { blockChanges, buildPicture, cardPicture, mismatchNote, periodNote, pathOf, pictureAlt, wholeChange, type BlockChange } from '../lib/picture';
 import { allCarsByBlock, allCarsFromFile, allCarsShort, ALL_CARS_MISSING, blockFigures, blockTip, changeTip, mostlyVisible, noiseNote, signedCars, streetsThatChange, throughLine, type Box, type TipText } from '../lib/proposal-map';
-import { seedsPhrase, signedNum, type LoadedHashes, type Proposal, type ProposalGroup } from '../lib/proposals';
+import { changeAt, seedsPhrase, signedNum, type LoadedHashes, type Proposal, type ProposalGroup } from '../lib/proposals';
 import { changeWidthFor, colorForIntensity, divergingGradient, mutedColor, type Mode } from '../lib/ramps';
 import { canTrace } from '../lib/redistribution-view';
 import { blockMeasured } from '../lib/scope';
@@ -84,7 +84,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
     for (const k of model.marks) m.set(k.iv, [...(m.get(k.iv) ?? []), k]);
     return m;
   }, [model]);
-  const ivLabel = (i: number) => shortStreets(p.interventions[i]?.label ?? (ivs[i] ? BADGE_NAME[ivs[i].type] : `Change ${i + 1}`));
+  const ivLabel = (i: number) => shortStreets(changeAt(p.interventions, i)?.label ?? (ivs[i] ? BADGE_NAME[ivs[i].type] : `Change ${i + 1}`));
   const stored = redist.status === 'ok' ? redist.data : null;
   const itemOf = (i: number): StoredItem | undefined => (stored && ivs[i] ? itemFor(stored, ivs[i]) : undefined);
 

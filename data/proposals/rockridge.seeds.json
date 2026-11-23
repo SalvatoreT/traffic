@@ -1,7 +1,7 @@
 {
   "version": 1,
   "area": "rockridge",
-  "cap": 20,
+  "cap": 30,
   "seeds": [
     {
       "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fr7b5~mn,9q9p3cz9dy~mn,9q9p3cq6m9~mn,9q9p3cwkcz~mf,9q9p3cqyux",
@@ -107,7 +107,7 @@
       "source": "search",
       "note": "",
       "added": "2026-11-18",
-      "lastPublished": "2026-11-20",
+      "lastPublished": "2026-11-23",
       "group": "unconstrained",
       "size": 6,
       "changePct": -74.0,
@@ -125,15 +125,15 @@
       "score": 49.3
     },
     {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,80.260~mn,9q9p3fprdr~mn,9q9p641p03~dd,9q9p3ctkug,42~ct,9q9p3cmuv6,a~ct,9q9p3cy1ne,a",
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~mn,9q9p642ut2,80.260~mn,9q9p641p03~dd,9q9p3ctkug,42~ct,9q9p3cy1ne,a~ct,9q9p3cmuv6,a",
       "source": "search",
       "note": "",
       "added": "2026-11-18",
-      "lastPublished": "2026-11-18",
+      "lastPublished": "2026-11-23",
       "group": "unconstrained",
       "size": 6,
-      "changePct": -50.7,
-      "score": 47.4
+      "changePct": -48.9,
+      "score": 43.1
     },
     {
       "link": "#v1;a=rockridge;p=pm_peak;s=ow,9q9p642z5y,355~ow,9q9p641h45,175~ow,9q9p3crqtn,305~ss,9q9p3cx9rf~tb,9q9p3cpnsz,15,300~ow,9q9p643b1e,260",
@@ -222,6 +222,61 @@
       "size": 3,
       "changePct": -35.5,
       "score": 34.5
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=tb,9q9p3fhkwq,185,80~tb,9q9p3fh27u,185,80~tb,9q9p3cuk16,185,80~tb,9q9p3cspz0,185,80~tb,9q9p3cs5sb,185,80~tb,9q9p3ckp63,185,90~tb,9q9p3c5c6x,185,95~tb,9q9p3c5ggb,185,100~tb,9q9p3fqngp,260,170~tb,9q9p3fk90b,185,80~tb,9q9p61c5xf,35,270~tb,9q9p61c5xf,35,335~tb,9q9p6468gj,30,260~tb,9q9p6468gj,355,260~tb,9q9p3fx20z,260,175~tb,9q9p648cuw,260,175~tb,9q9p3crvgs,35,230~tb,9q9p3crvgs,35,305~tb,9q9p646w22,355,265~tb,9q9p3cpnsz,15,300~tb,9q9p3c7fzv,185,80",
+      "source": "hand",
+      "note": "turn-ban-set-candidates: left-turns",
+      "added": "2026-11-23",
+      "lastPublished": "",
+      "group": "",
+      "size": 21,
+      "changePct": null,
+      "score": null
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=tb,9q9p3fhkwq,185,80~tb,9q9p3fk90b,5,80~tb,9q9p3fh27u,185,80~tb,9q9p3fhkwq,5,80~tb,9q9p3cuk16,185,80~tb,9q9p3fh27u,5,80~tb,9q9p3cspz0,185,80~tb,9q9p3cuk16,5,80~tb,9q9p3cs5sb,185,80~tb,9q9p3cspz0,5,80~tb,9q9p3ckp63,185,90~tb,9q9p3cs5sb,5,80~tb,9q9p3c5ggb,5,100~tb,9q9p3c5ggb,185,100~tb,9q9p3fx20z,80,175~tb,9q9p3fqngp,260,170~tb,9q9p3fk90b,185,80~tb,9q9p3c7fzv,5,80~tb,9q9p3crvgs,305,230~tb,9q9p3crvgs,215,230~tb,9q9p3crvgs,215,305~tb,9q9p61c5xf,35,270~tb,9q9p61c5xf,35,335~tb,9q9p61c5xf,210,270~tb,9q9p61c5xf,210,335~tb,9q9p6468gj,30,260~tb,9q9p6468gj,355,260~tb,9q9p3fx20z,260,175~tb,9q9p648cuw,80,175~tb,9q9p648cuw,260,175~tb,9q9p3crvgs,35,230~tb,9q9p3crvgs,35,305~tb,9q9p3cpnsz,210,300~tb,9q9p6468gj,215,260~tb,9q9p646w22,355,265~tb,9q9p646w22,175,265~tb,9q9p3cpnsz,15,300~tb,9q9p6468gj,175,260~tb,9q9p3c7fzv,185,80~tb,9q9p3ckp63,5,90~tb,9q9p3fqngp,80,170",
+      "source": "hand",
+      "note": "turn-ban-set-candidates: all-turns-access",
+      "added": "2026-11-23",
+      "lastPublished": "",
+      "group": "",
+      "size": 41,
+      "changePct": null,
+      "score": null
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=tc,9q9p3cz9dy~ow,9q9p3frnnb,355~ow,9q9p3crqtn,125~ss,9q9p3cx9rf~ss,9q9p642z5y~tb,9q9p3fhkwq,185,80~tb,9q9p3fk90b,5,80~tb,9q9p3fh27u,185,80~tb,9q9p3fhkwq,5,80~tb,9q9p3cuk16,185,80~tb,9q9p3fh27u,5,80~tb,9q9p3cspz0,185,80~tb,9q9p3cuk16,5,80~tb,9q9p3cs5sb,185,80~tb,9q9p3cspz0,5,80~tb,9q9p3ckp63,185,90~tb,9q9p3cs5sb,5,80~tb,9q9p3c5ggb,5,100~tb,9q9p3c5ggb,185,100~tb,9q9p3fx20z,80,175~tb,9q9p3fqngp,260,170~tb,9q9p3fk90b,185,80~tb,9q9p3c7fzv,5,80~tb,9q9p3crvgs,305,230~tb,9q9p3crvgs,215,230~tb,9q9p3crvgs,215,305~tb,9q9p61c5xf,35,270~tb,9q9p61c5xf,35,335~tb,9q9p61c5xf,210,270~tb,9q9p61c5xf,210,335~tb,9q9p6468gj,30,260~tb,9q9p6468gj,355,260~tb,9q9p3fx20z,260,175~tb,9q9p648cuw,80,175~tb,9q9p648cuw,260,175~tb,9q9p3crvgs,35,230~tb,9q9p3crvgs,35,305~tb,9q9p3cpnsz,210,300~tb,9q9p6468gj,215,260~tb,9q9p646w22,355,265~tb,9q9p646w22,175,265~tb,9q9p3cpnsz,15,300~tb,9q9p6468gj,175,260~tb,9q9p3c7fzv,185,80~tb,9q9p3ckp63,5,90~tb,9q9p3fqngp,80,170",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-23",
+      "lastPublished": "2026-11-23",
+      "group": "unconstrained",
+      "size": 6,
+      "changePct": -84.6,
+      "score": 76.5
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3cx02b,125~tb,9q9p3fhkwq,185,80~tb,9q9p3fk90b,5,80~tb,9q9p3fh27u,185,80~tb,9q9p3fhkwq,5,80~tb,9q9p3cuk16,185,80~tb,9q9p3fh27u,5,80~tb,9q9p3cspz0,185,80~tb,9q9p3cuk16,5,80~tb,9q9p3cs5sb,185,80~tb,9q9p3cspz0,5,80~tb,9q9p3ckp63,185,90~tb,9q9p3cs5sb,5,80~tb,9q9p3c5ggb,5,100~tb,9q9p3c5ggb,185,100~tb,9q9p3fx20z,80,175~tb,9q9p3fqngp,260,170~tb,9q9p3fk90b,185,80~tb,9q9p3c7fzv,5,80~tb,9q9p3crvgs,305,230~tb,9q9p3crvgs,215,230~tb,9q9p3crvgs,215,305~tb,9q9p61c5xf,35,270~tb,9q9p61c5xf,35,335~tb,9q9p61c5xf,210,270~tb,9q9p61c5xf,210,335~tb,9q9p6468gj,30,260~tb,9q9p6468gj,355,260~tb,9q9p3fx20z,260,175~tb,9q9p648cuw,80,175~tb,9q9p648cuw,260,175~tb,9q9p3crvgs,35,230~tb,9q9p3crvgs,35,305~tb,9q9p3cpnsz,210,300~tb,9q9p6468gj,215,260~tb,9q9p646w22,355,265~tb,9q9p646w22,175,265~tb,9q9p3cpnsz,15,300~tb,9q9p6468gj,175,260~tb,9q9p3c7fzv,185,80~tb,9q9p3ckp63,5,90~tb,9q9p3fqngp,80,170",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-23",
+      "lastPublished": "2026-11-23",
+      "group": "unconstrained",
+      "size": 2,
+      "changePct": -72.7,
+      "score": 65.6
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~dd,9q9p3cz9dy,128~dd,9q9p642ut2,41~ow,9q9p3cx9rf,175~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-23",
+      "lastPublished": "2026-11-23",
+      "group": "unconstrained",
+      "size": 6,
+      "changePct": -66.8,
+      "score": 57.5
     }
   ]
 }

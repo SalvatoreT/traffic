@@ -132,12 +132,12 @@ pub fn label(run: &Run) -> String {
 /// The engine's form of an intervention list: each Slow Street becomes a 15 mph `speed_limit` on every block of its run that is faster
 /// than that (a limit never raises a slower block). A Slow Street that matches no street is dropped.
 pub fn expand(net: &Network, ivs: &[Intervention]) -> Vec<Intervention> {
-    if !ivs.iter().any(|iv| iv.ty == TYPE) {
+    if !ivs.iter().any(|iv| iv.ty == TYPE || iv.ty == super::bansets::TYPE) {
         return ivs.to_vec();
     }
     let mps = slow_street_mps();
     let mut out = Vec::new();
-    for iv in ivs {
+    for iv in super::bansets::flatten(ivs).iter() {
         if iv.ty != TYPE {
             out.push(iv.clone());
             continue;
