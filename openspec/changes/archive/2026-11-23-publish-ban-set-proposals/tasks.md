@@ -29,16 +29,16 @@
 ## 4. Laptop publish run (runbook.md)
 
 - [x] 4.1 Runbook, `laptop/*.zsh`, `scripts/verify.cjs`, `install.md` written and the scripts syntax-checked
-- [ ] 4.2 Step A: worktree, gates, build, tests, ban-set list
-- [ ] 4.3 Step B: the search with `--ban-sets` writing the real files in the worktree (rerun after pulling the commit with the sixth objective; the first run's outputs are replaced)
-- [ ] 4.4 Step C: redistribution and stored results
-- [ ] 4.5 Step D: `verify.zsh` passes and `headline.md` is read
-- [ ] 4.6 Step E: pack to the dev branch
+- [x] 4.2 Step A: worktree, gates, build, tests, ban-set list
+- [x] 4.3 Step B: the search with `--ban-sets` writing the real files in the worktree (rerun after pulling the commit with the sixth objective; the first run's outputs are replaced)
+- [x] 4.4 Step C: redistribution and stored results
+- [x] 4.5 Step D: `verify.zsh` passes and `headline.md` is read
+- [x] 4.6 Step E: pack to the dev branch
 
 ## 5. Publish (lead session, install.md)
 
-- [ ] 5.1 Verify checksums, install into `public/data` and `data/`, `data:llms`, `data:previews`, tests
-- [ ] 5.2 Commit the tracked files (report, seeds, README), deploy the app, `data:push`
-- [ ] 5.3 Read the live site back (hashes and the pages in `install.md`)
-- [ ] 5.4 Record entry in `data/calibration/rockridge.record.md` (written by the lead after the read-back)
-- [ ] 5.5 Archive this change
+- [x] 5.1 Verify checksums, install into `public/data` and `data/`, `data:llms`, `data:previews`, tests
+- [x] 5.2 Commit the tracked files (report, seeds, README), deploy the app, `data:push`
+- [x] 5.3 Read the live site back (hashes and the pages in `install.md`)
+- [x] 5.4 Record entry in `data/calibration/rockridge.record.md` (written by the lead after the read-back)
+- [x] 5.5 Archive this change

@@ -71,7 +71,7 @@ The generated proposals page SHALL give each package's share link beside its sce
 - **THEN** it exits with a usage error and writes nothing
 
 ### Requirement: Search options for objectives
-`explore` SHALL accept `--objectives` (`all` or a list of `most-removed`, `no-closures`, `least-detour`, `fewest-changes`), and SHALL write each option's objectives and residents' detour into the proposals file and the report. It SHALL NOT accept a detour weight.
+`explore` SHALL accept `--objectives` (`all` or a list of `most-removed`, `no-closures`, `least-detour`, `fewest-changes`, `no-turn-bans`, `most-removed-no-turn-bans`), and SHALL write each option's objectives and residents' detour into the proposals file and the report. It SHALL NOT accept a detour weight.
 
 #### Scenario: One objective
 - **WHEN** `explore` runs with `--objectives most-removed`
