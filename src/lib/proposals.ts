@@ -705,6 +705,7 @@ export const OBJECTIVE_LABELS: Record<string, string> = {
   'least-detour': 'least detour for residents',
   'fewest-changes': 'fewest changes',
   'no-turn-bans': 'no turn restrictions',
+  'most-removed-no-turn-bans': 'most cut-through removed without turn restrictions',
 };
 
 type ObjectiveEvidence = Pick<Proposal, 'objectives' | 'simulationProblem' | 'accessProblem' | 'residentsDetour'>;

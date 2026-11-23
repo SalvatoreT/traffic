@@ -37,7 +37,7 @@ for (const g of groups) {
   check(`group ${g.id}: simulator fingerprint`, c.simulator === FP, `${c.simulator} (expected ${FP})`);
   check(`group ${g.id}: reporting method`, typeof c.reportMethod === 'string' && c.reportMethod.length > 0, String(c.reportMethod));
   check(`group ${g.id}: confirmation seeds`, JSON.stringify(c.seeds) === JSON.stringify([101, 102, 103, 104, 105, 106, 107, 108, 109, 110]), JSON.stringify(c.seeds));
-  check(`group ${g.id}: no-turn-bans objective listed`, (c.objectives?.list || []).some((o) => o.id === 'no-turn-bans'), (c.objectives?.list || []).map((o) => o.id).join(', '));
+  for (const id of ['no-turn-bans', 'most-removed-no-turn-bans']) check(`group ${g.id}: ${id} objective listed`, (c.objectives?.list || []).some((o) => o.id === id), (c.objectives?.list || []).map((o) => o.id).join(', '));
 }
 for (const { p } of options) {
   check(`${p.id}: no rejection`, !p.simulationProblem && !p.accessProblem, p.simulationProblem || p.accessProblem || 'none');
@@ -47,15 +47,24 @@ for (const { p } of options) {
 }
 const sorted = [...options].sort((a, b) => through(a.p) - through(b.p));
 const top = sorted[0]?.p;
-const noBan = options.filter(({ p }) => (p.objectives || []).includes('no-turn-bans'));
+const withTag = (tag) => options.filter(({ p }) => (p.objectives || []).includes(tag));
+const noBan = withTag('no-turn-bans');
 check('exactly one option carries the no-turn-bans tag', noBan.length === 1, noBan.map(({ p }) => p.id).join(', ') || 'none');
 const nb = noBan[0]?.p;
-if (nb) {
-  check('the no-turn-bans option holds no turn ban', bans(nb) === 0, `${bans(nb)} bans`);
-  check("the no-turn-bans option equals the old p1's interventions", items(nb.link) === items(oldP1) && nb.interventions.length === 6, `${nb.id}: ${nb.interventions.length} interventions, ${closures(nb)} closures`);
-  check(`the no-turn-bans option reproduces ${P1} through cars an hour within ${TOL}`, Math.abs(through(nb) - P1) <= TOL, `${f1(through(nb))} (published ${P1})`);
+if (nb) check('the no-turn-bans option holds no turn ban', bans(nb) === 0, `${nb.id}: ${bans(nb)} bans, ${nb.interventions.length} interventions, ${closures(nb)} closures, ${f1(through(nb))} through cars an hour`);
+const mostNoBan = withTag('most-removed-no-turn-bans');
+check('exactly one option carries the most-removed-no-turn-bans tag', mostNoBan.length === 1, mostNoBan.map(({ p }) => p.id).join(', ') || 'none');
+const mb = mostNoBan[0]?.p;
+if (mb) {
+  check('the most-removed-no-turn-bans option holds no turn ban', bans(mb) === 0, `${bans(mb)} bans`);
+  check("the most-removed-no-turn-bans option equals the old p1's interventions", items(mb.link) === items(oldP1) && mb.interventions.length === 6, `${mb.id}: ${mb.interventions.length} interventions, ${closures(mb)} closures`);
+  check(`the most-removed-no-turn-bans option reproduces ${P1} through cars an hour within ${TOL}`, Math.abs(through(mb) - P1) <= TOL, `${f1(through(mb))} (published ${P1})`);
 }
-const tagged = options.filter(({ p }) => (p.objectives || []).includes('no-turn-bans'));
+if (nb && mb) {
+  const same = nb.id === mb.id;
+  checks.push({ name: 'no-turn-bans and most-removed-no-turn-bans options', ok: true, warn: same, detail: same ? `one option (${nb.id}) carries both tags` : `${nb.id} (${f1(through(nb))}) and ${mb.id} (${f1(through(mb))})` });
+  check('most-removed-no-turn-bans removes at least as many through cars as no-turn-bans', through(mb) <= through(nb) + 1e-9, `${f1(through(mb))} vs ${f1(through(nb))}`);
+}
 check('no duplicate: each link appears once', new Set(options.map(({ p }) => items(p.link))).size === options.length, `${options.length} options`);
 const leftOnly = options.find(({ p }) => p.interventions.length === 1 && p.interventions[0].type === 'ban_set' && p.interventions[0].bans === 21);
 const detail = leftOnly ? `kept as ${leftOnly.p.id}: ${f1(through(leftOnly.p))} through cars an hour` : 'not in the list (the earlier run listed it as option 4)';

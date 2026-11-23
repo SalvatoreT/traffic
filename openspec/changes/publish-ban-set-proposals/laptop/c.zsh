@@ -20,5 +20,5 @@ rm -rf public/data/results public/data/redistribution
 step redistribution npm run data:redistribution -- --jobs ${JOBS} || stop "data:redistribution failed (see ${A}/redistribution.log)"
 log "redistribution: $(ls public/data/redistribution/rockridge | wc -l | tr -d ' ') files; $(tail -3 ${A}/redistribution.log | tr '\n' ';' | cut -c1-300)"
 step results npm run data:results -- --jobs 4 || stop "data:results failed (see ${A}/results.log)"
-log "results: $(ls public/data/results/rockridge | wc -l | tr -d ' ') files (including index.json)"
+log "results: $(ls public/data/results/rockridge | wc -l | tr -d ' ') files (including index.json and baseline-intents.json)"
 log "C DONE"

@@ -5,6 +5,7 @@ The search with ban sets (`turn-ban-set-candidates`, laptop run of 2026-11-22) r
 ## What changes
 
 - A fifth objective, `no-turn-bans` ("no turn restrictions"), that guarantees the list holds the best package without any turn ban, chosen inside its own family so a ban package cannot dominate, fold or displace it. It has its own beam over candidates that are not turn bans.
+- A sixth objective, `most-removed-no-turn-bans` ("most cut-through removed without turn restrictions"): among packages without turn bans, the largest through-car reduction. It has no beam of its own and only chooses among the finalists that exist. The laptop run found a new five-closure package for `no-turn-bans`; the project lead decided to publish both it and the package that removes the most (the six-change package published today).
 - The Proposals card for a package with turn bans says the scale in its visible part (the count of turn restrictions around the edge of the area), carries a standing caveat, lists every ban by the street it starts on, and draws one mark for each intersection instead of one for each ban. Every card shows the resident detour next to the headline.
 - The Map tab folds six or more turn bans into one scenario entry with one Remove.
 - The text pages and link-preview cards carry the count, the caveat and the resident detour.

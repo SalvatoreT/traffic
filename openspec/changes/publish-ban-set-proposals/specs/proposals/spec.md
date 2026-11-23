@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Options are chosen for named objectives
-The search SHALL choose the published options for five objectives, each a documented rule with its weights labeled assumptions: most cut-through removed, no street closures, least detour for residents, fewest changes and no turn restrictions. Each objective SHALL grow its own beam over the shared screening cache, finalists SHALL be pooled and rechecked together, and each option SHALL name the objectives it is the best for. The list SHALL stay one list, largest through-car removal first.
+The search SHALL choose the published options for six objectives, each a documented rule with its weights labeled assumptions: most cut-through removed, no street closures, least detour for residents, fewest changes, no turn restrictions and most cut-through removed without turn restrictions. Each objective except the last SHALL grow its own beam over the shared screening cache, finalists SHALL be pooled and rechecked together, and each option SHALL name the objectives it is the best for. The list SHALL stay one list, largest through-car removal first.
 
 #### Scenario: One package, two objectives
 - **WHEN** the same package is the best for most cut-through removed and for fewest changes
@@ -45,3 +45,25 @@ The published search command SHALL include `--ban-sets`. The flag SHALL stay exp
 #### Scenario: Older file
 - **WHEN** a proposals file written before ban sets is reproduced from its recorded settings
 - **THEN** the search runs without `--ban-sets` and its candidates are those of that file
+
+### Requirement: The no-ban package that removes the most is also in the list
+The search SHALL choose, for the objective `most-removed-no-turn-bans` (label "most cut-through removed without turn restrictions"), the rechecked package with the largest through-car reduction among those that hold no turn ban, after the main choice's rules applied inside that family. Ties SHALL go to fewer changes, then the earlier finalist. Its winner SHALL NOT be dropped by the displacement rule.
+
+#### Scenario: The score prefers a smaller reduction
+- **WHEN** the best-scoring package without bans removes fewer through cars than another package without bans that rises more on one block
+- **THEN** both are listed, the first tagged `no-turn-bans` and the second `most-removed-no-turn-bans`
+
+#### Scenario: Same package
+- **WHEN** one package is the best-scoring and the largest reduction among packages without bans
+- **THEN** it is listed once with both tags
+
+#### Scenario: No ban in the list
+- **WHEN** no option in the finished list holds a turn ban
+- **THEN** no option carries the `most-removed-no-turn-bans` tag
+
+### Requirement: The most-removed objective without bans adds no search
+The objective `most-removed-no-turn-bans` SHALL grow no beam and SHALL NOT change the screening runs, the candidate budgets, the seeds or the finalist set; it SHALL choose among the finalists that exist. Its winner SHALL be confirmed on the confirmation seeds like every chosen option.
+
+#### Scenario: Screening unchanged
+- **WHEN** the search runs with `--objectives all`
+- **THEN** the objectives that grow a beam are the five of the earlier list, and the finalists are those of a run without the sixth objective

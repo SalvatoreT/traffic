@@ -21,9 +21,19 @@ pub enum Objective {
     /// The best package that holds no turn ban at all (no ban set and no single turn ban), so the list keeps a filter-only option next to
     /// the ban packages: a ban applies to every driver, residents included, with no exemption in the model.
     NoTurnBans,
+    /// The package that removes the most through cars among those that hold no turn ban. It has no beam of its own: it only picks among the
+    /// finalists the other beams already produced.
+    MostRemovedNoTurnBans,
 }
 
-pub const ALL: [Objective; 5] = [Objective::MostRemoved, Objective::NoClosures, Objective::LeastDetour, Objective::FewestChanges, Objective::NoTurnBans];
+pub const ALL: [Objective; 6] = [
+    Objective::MostRemoved,
+    Objective::NoClosures,
+    Objective::LeastDetour,
+    Objective::FewestChanges,
+    Objective::NoTurnBans,
+    Objective::MostRemovedNoTurnBans,
+];
 
 /// The four objectives of the search benchmark's recorded cases (the new one is not part of them).
 pub const BENCHMARK: [Objective; 4] = [Objective::MostRemoved, Objective::NoClosures, Objective::LeastDetour, Objective::FewestChanges];
@@ -47,6 +57,7 @@ impl Objective {
             Objective::LeastDetour => "least-detour",
             Objective::FewestChanges => "fewest-changes",
             Objective::NoTurnBans => "no-turn-bans",
+            Objective::MostRemovedNoTurnBans => "most-removed-no-turn-bans",
         }
     }
 
@@ -58,6 +69,7 @@ impl Objective {
             Objective::LeastDetour => "least detour for residents",
             Objective::FewestChanges => "fewest changes",
             Objective::NoTurnBans => "no turn restrictions",
+            Objective::MostRemovedNoTurnBans => "most cut-through removed without turn restrictions",
         }
     }
 
@@ -71,7 +83,19 @@ impl Objective {
             ),
             Objective::FewestChanges => format!("The same score, among packages of at most {FEWEST_MAX_CHANGES} changes."),
             Objective::NoTurnBans => "The same score, among packages that hold no turn ban: no ban set and no single turn ban. It competes only with packages of its own kind, so a package with turn bans cannot displace it. It is the option for readers who want no turn restrictions, because a ban applies to every driver, residents included, in the model.".into(),
+            Objective::MostRemovedNoTurnBans => "Through cars removed, among packages that hold no turn ban: no ban set and no single turn ban. Ties go to fewer changes. The score above trades the reduction against the worst block, so this option names the no-ban package that removes the most cut-through, whatever it piles onto its worst block.".into(),
         }
+    }
+
+    /// Whether the search grows a beam of its own for this objective. The most-removed-without-bans objective reads the finalists the
+    /// no-turn-bans beam and the main beam already produce, so it adds no screening runs.
+    pub fn has_beam(self) -> bool {
+        self != Objective::MostRemovedNoTurnBans
+    }
+
+    /// The objectives that exist to contrast a filter-only option with ban packages; their tags are dropped when no listed option holds a ban.
+    pub fn is_no_ban(self) -> bool {
+        matches!(self, Objective::NoTurnBans | Objective::MostRemovedNoTurnBans)
     }
 
     pub fn from_id(id: &str) -> Option<Objective> {
@@ -123,6 +147,6 @@ pub fn eligible(obj: Objective, f: &Final) -> bool {
         Objective::LeastDetour => f.detour_s.is_some(),
         Objective::NoClosures => !f.closes,
         Objective::FewestChanges => f.set.len() <= FEWEST_MAX_CHANGES,
-        Objective::NoTurnBans => !f.has_bans,
+        Objective::NoTurnBans | Objective::MostRemovedNoTurnBans => !f.has_bans,
     }
 }

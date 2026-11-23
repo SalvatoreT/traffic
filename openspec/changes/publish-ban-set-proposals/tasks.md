@@ -12,6 +12,9 @@
 - [x] 2.3 Reduced search on the real network: the filter-only option equals published p1's interventions (design D2)
 - [x] 2.4 `search_bench` keeps its four objectives (`objectives::BENCHMARK`)
 
+- [x] 2.5 `Objective::MostRemovedNoTurnBans` (`most-removed-no-turn-bans`): no beam (`has_beam`), tag dropped with the no-turn-bans tag when no option holds a ban, tests, TypeScript label, docs (design D9)
+- [x] 2.6 `scripts/verify.cjs` and `laptop/verify.zsh`: the old p1 checks move to the new tag, the stored-results count excludes `index.json` and `baseline-intents.json`
+
 ## 3. Card, scenario panel, text pages (container)
 
 - [x] 3.1 `src/lib/proposals.ts`: `banHeadline`, `banCount`, `BAN_CAVEAT`, `detourHeadline`, the objective label
@@ -27,7 +30,7 @@
 
 - [x] 4.1 Runbook, `laptop/*.zsh`, `scripts/verify.cjs`, `install.md` written and the scripts syntax-checked
 - [ ] 4.2 Step A: worktree, gates, build, tests, ban-set list
-- [ ] 4.3 Step B: the search with `--ban-sets` writing the real files in the worktree
+- [ ] 4.3 Step B: the search with `--ban-sets` writing the real files in the worktree (rerun after pulling the commit with the sixth objective; the first run's outputs are replaced)
 - [ ] 4.4 Step C: redistribution and stored results
 - [ ] 4.5 Step D: `verify.zsh` passes and `headline.md` is read
 - [ ] 4.6 Step E: pack to the dev branch

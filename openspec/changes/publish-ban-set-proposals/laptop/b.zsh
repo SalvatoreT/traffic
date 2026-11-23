@@ -1,11 +1,11 @@
 #!/bin/zsh
 # Publish ban-set proposals, step B (after a.zsh): the published search command plus --ban-sets, writing the real files IN THE WORKTREE ONLY:
-# public/data/rockridge.proposals.json, data/proposals/rockridge.md and data/proposals/rockridge.seeds.json. The objectives are the default (all, which includes no-turn-bans).
+# public/data/rockridge.proposals.json, data/proposals/rockridge.md and data/proposals/rockridge.seeds.json. The objectives are the default (all, which includes no-turn-bans and most-removed-no-turn-bans, the second adding no beam).
 # The seeds file first gets a higher cap and the two hand packages `left-turns` and `all-turns-access` (each one ban-set intervention), as in the run of 2026-11-22.
 # The pictures for the cards come with the search (the run of 2026-11-22 wrote them), so there is no separate annotate step; verify.zsh says if one is missing.
 # No data:push, no /api/ request, no upload token.
 #   W=/path/to/traffic-pub zsh openspec/changes/publish-ban-set-proposals/laptop/b.zsh
-# About 45 minutes (range 35 to 65): the search of 2026-11-22 took 36 minutes (2,146 s); the extra beam for the no-turn-bans objective shares the screening cache and adds a few minutes.
+# About 45 minutes (range 35 to 65): the search of 2026-11-22 took 36 minutes (2,146 s); the extra beam for the no-turn-bans objective (the most-removed-no-turn-bans objective has none) shares the screening cache and adds a few minutes.
 set -u
 W=${W:?set W to the worktree}
 cd ${W} || exit 1

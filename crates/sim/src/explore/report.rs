@@ -722,6 +722,9 @@ pub fn objective_winner(finals: &[Final], obj: Objective, keep: &[usize]) -> Opt
         let lowest = above.iter().copied().min_by(|&a, &b| finals[a].detour_s.partial_cmp(&finals[b].detour_s).unwrap_or(std::cmp::Ordering::Equal).then(by_removed(b, a)))?;
         return above.iter().copied().filter(|&c| c == lowest || !detour_lower(&finals[lowest], &finals[c])).max_by(|&a, &b| by_removed(a, b));
     }
+    if obj == Objective::MostRemovedNoTurnBans {
+        return keep.iter().copied().max_by(|&a, &b| by_removed(a, b));
+    }
     keep.iter().copied().max_by(|&a, &b| finals[a].score.partial_cmp(&finals[b].score).unwrap_or(std::cmp::Ordering::Equal).then(finals[b].set.len().cmp(&finals[a].set.len())).then(b.cmp(&a)))
 }
 
@@ -921,10 +924,10 @@ pub fn select_by_objectives(finals: &[Final], p: &Params, max: usize) -> (Vec<Pi
             None => break extra,
         }
     };
-    // With no turn ban in the list there is nothing to contrast with, so the no-turn-bans tag is left off.
+    // With no turn ban in the list there is nothing to contrast with, so the no-turn-bans tags are left off.
     if !chosen.iter().map(|c| c.0).chain(extra.iter().copied()).any(|i| finals[i].has_bans) {
         for c in chosen.iter_mut() {
-            c.1.retain(|o| *o != Objective::NoTurnBans);
+            c.1.retain(|o| !o.is_no_ban());
         }
     }
     let mut picks: Vec<Pick> = chosen
@@ -1250,7 +1253,7 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
     let ctx = Ctx { study, p, cands: &cands, base: &base };
     let mut state = beam_search(&ctx, &families);
     // Each other objective grows its own beam over the shared screening cache: singles and packages already screened are reused.
-    let others: Vec<Objective> = p.objectives.iter().copied().filter(|o| *o != Objective::MostRemoved).collect();
+    let others: Vec<Objective> = p.objectives.iter().copied().filter(|o| *o != Objective::MostRemoved && o.has_beam()).collect();
     for &obj in &others {
         let lim = BeamLimit::for_objective(obj, p, &cands);
         let before = state.used;

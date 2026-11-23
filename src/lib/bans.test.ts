@@ -81,5 +81,6 @@ describe('the card text for turn bans', () => {
   });
   it('names the no-turn-restrictions objective after the others', () => {
     expect(objectiveTags({ objectives: ['no-turn-bans', 'most-removed'] })).toEqual(['most cut-through removed', 'no turn restrictions']);
+    expect(objectiveTags({ objectives: ['most-removed-no-turn-bans', 'no-turn-bans'] })).toEqual(['no turn restrictions', 'most cut-through removed without turn restrictions']);
   });
 });
