@@ -897,7 +897,7 @@ The app SHALL have a top-level Methodology tab at `/methodology`, between Street
 - **THEN** `/methodology.md` carries the same copy and the diagrams' descriptions, and `llms.txt` links it
 
 ### Requirement: Objective tags on proposal cards
-A proposal card SHALL show a tag row under the title, "Best for: " followed by the objectives the option is best for, in the order most cut-through removed, no street closures, least detour for residents, fewest changes. An option with no tags SHALL show no row. The text pages and the link-preview text SHALL carry the same words.
+A proposal card SHALL show a tag row under the title, "Best for: " followed by the objectives the option is best for, in the order best balance of cut-through removed and traffic added to one block (the search's score winner, which need not be the option that removes the most), no street closures, least detour for residents, fewest changes. An option with no tags SHALL show no row. The text pages and the link-preview text SHALL carry the same words.
 
 #### Scenario: Tags
 - **WHEN** an option is the best for two objectives
@@ -1259,15 +1259,19 @@ The Proposals tab SHALL show street-type words that follow a street name in thei
 - **THEN** the label is unchanged
 
 ### Requirement: A package with turn bans states its scale on the card
-The Proposals card of a package that holds turn bans SHALL show, in its visible part, the number of turn bans as "N turn restrictions around the edge of the area" and the standing caveat that they apply to every driver, residents included, all day, and assume full compliance (ASSUMPTION). A disclosure SHALL list every turn ban grouped by the street it starts on.
+The Proposals card of a package that holds turn bans SHALL show, in its visible part, the number of turn bans as "N turn restrictions at entrances to the area" and the standing caveat that they apply to every driver, residents included, all day, and assume full compliance (ASSUMPTION). A disclosure SHALL list every turn ban grouped by the street it starts on.
 
 #### Scenario: A ban set on the card
 - **WHEN** a package holds a ban set of 41 turn bans
-- **THEN** the card says "41 turn restrictions around the edge of the area" with the caveat before the map, and one disclosure lists all 41 under the streets they start on
+- **THEN** the card says "41 turn restrictions at entrances to the area" with the caveat before the map, and one disclosure lists all 41 under the streets they start on
 
 #### Scenario: Few bans
 - **WHEN** a package holds two single turn bans
 - **THEN** the card still shows the count and the caveat
+
+#### Scenario: A handful of bans
+- **WHEN** a package holds a ban set of 3 bans and one single turn ban
+- **THEN** the card says "4 turn restrictions at entrances to the area", not that they ring the area, and shows the caveat
 
 ### Requirement: The card's picture marks turn bans by intersection
 From six turn bans in a package, the card's picture SHALL draw one mark for each intersection where bans start: the left-turn sign, the right-turn sign, or a sign with both arrows when both occur there. Below six, each ban SHALL keep its own sign. The card's change list SHALL be the text alternative, and color SHALL NOT be the only signal.
