@@ -5,7 +5,7 @@ import type { NetLink, NetNode, Network } from '../src/types';
 import { encodeScenario } from '../src/lib/hash';
 import { makeProjection } from '../src/lib/projection';
 import { DEFAULT_DATA_DIR, loadAreaFiles, repoRoot } from './lib/agent-area';
-import { analyze, boundingStreetNames, buildPackages, keepAccess, packageLink, parseSinglesLog, rankFromLinks, slug, strandedNodes, turnBan } from './lib/turn-ban-sets';
+import { analyze, boundingStreetNames, buildPackages, keepAccess, packageLink, parseSinglesLog, rankFromLinks, slug, strandedNodes, topKUnder, turnBan } from './lib/turn-ban-sets';
 
 const ORIGIN = { lon: -122.25, lat: 37.84 };
 
@@ -141,6 +141,28 @@ describe('entry movements on a small network', () => {
     expect(withTop.find((p) => p.id === 'top-5')).toBeUndefined();
   });
 
+  it('under a cap keeps only packages of at most that many bans, with top-2 to top-k and the top three per bounding street', () => {
+    const rank = a.movements.filter((m) => m.baseBan !== 'all-periods').map((m, i) => ({ fromLink: m.fromLink, toLink: m.toLink, rank: i + 1 }));
+    expect(rank.length).toBeGreaterThanOrEqual(5);
+    const capped = buildPackages(a, rank, topKUnder(4), undefined, 4);
+    expect(capped.length).toBeGreaterThan(0);
+    expect(capped.every((p) => p.movements.length <= 4)).toBe(true);
+    expect(topKUnder(4)).toEqual([2, 3, 4]);
+    expect(topKUnder(1)).toEqual([]);
+    expect(capped.map((p) => p.id).filter((id) => id.startsWith('top-'))).toEqual(['top-2', 'top-3', 'top-4']);
+    expect(capped.find((p) => p.id === 'top-4')!.movements.map(key)).toEqual(rank.slice(0, 4).map(key));
+    expect(capped.some((p) => p.id === 'all-turns' || p.id === 'all-entries')).toBe(false);
+    // a package the cap allows is the same as without the cap, and the ranking is only ever the caller's
+    expect(capped.find((p) => p.id === 'street-ring-rd')!.movements.map(key)).toEqual(byId['street-ring-rd'].movements.map(key));
+    expect(buildPackages(a, [], topKUnder(4), undefined, 4).some((p) => p.id.startsWith('top-'))).toBe(false);
+    // no cap given: nothing changes
+    expect(buildPackages(a, rank).map((p) => p.id)).toEqual(buildPackages(a, rank, [3, 5, 10], undefined, undefined).map((p) => p.id));
+    // per street: three of its highest-ranked movements, unless that is a package already there
+    const withStreet = buildPackages(a, rank, [], undefined, 5).find((p) => p.id === 'street-main-st-top-3');
+    const main = rank.filter((r) => a.movements.find((m) => key(m) === key(r))!.boundingStreet === 'Main St');
+    if (main.length >= 3) expect(withStreet!.movements.map(key)).toEqual(main.slice(0, 3).map(key));
+    else expect(withStreet).toBeUndefined();
+  });
 
   it('predicts the nodes a package strands and takes out the turns that would', () => {
     const keys = (ms: { fromLink: number; toLink: number }[]) => new Set(ms.map(key));

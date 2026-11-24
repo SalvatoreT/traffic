@@ -260,3 +260,138 @@ fn counts_on_the_study_area_network() {
     assert_eq!(d("from-telegraph-avenue"), Some((20, true)));
     assert_eq!(d("all-turns"), Some((43, true)));
 }
+
+fn hot_for(s: &Study, ranked: &[(u32, u32)]) -> Hotspots {
+    let mut mv_ct = std::collections::BTreeMap::new();
+    for (i, m) in ranked.iter().enumerate() {
+        mv_ct.insert(*m, 100.0 - i as f64);
+    }
+    Hotspots { block_ct: vec![0.0; s.idx.blocks.len()], node_ct: vec![0.0; s.net.nodes.len()], mv_ct }
+}
+
+/// Entry movements in the order left, right, left, right, ... so that no top-k prefix of 2 to 4 equals a whole left-turn or right-turn set.
+fn interleaved(s: &Study) -> Vec<(u32, u32)> {
+    let a = bansets::analyze(s, &["p"]);
+    let pick = |t: Turn| a.movements.iter().filter(|m| m.turn == t).map(|m| (m.from, m.to)).collect::<Vec<_>>();
+    let (l, mut r) = (pick(Turn::Left), pick(Turn::Right));
+    r.rotate_left(1);
+    l.iter().zip(&r).flat_map(|(x, y)| [*x, *y]).collect()
+}
+
+#[test]
+fn a_cap_drops_the_sets_over_it_with_the_reason_and_none_changes_nothing() {
+    let s = study_of(mini(vec![]));
+    let plain = bansets::generate(&s, &["p"]);
+    let none = bansets::generate_capped(&s, &["p"], None);
+    assert_eq!(ids(&plain), ids(&none));
+    assert_eq!(plain.dropped.len(), none.dropped.len());
+    let g = bansets::generate_capped(&s, &["p"], Some(3));
+    assert!(g.sets.iter().all(|x| x.moves.len() <= 3), "{:?}", ids(&g));
+    assert!(g.sets.iter().any(|x| x.id == "left-turns"), "a set of exactly the cap stays");
+    let access = g.dropped.iter().find(|d| d.id == "all-turns-access").unwrap();
+    assert_eq!(access.bans, 4);
+    assert_eq!(access.reason, "over the turn-ban cap: 4 individual turn bans, more than the cap of 3");
+    assert!(!g.sets.iter().any(|x| x.id == "all-turns-access"));
+    let g2 = bansets::generate_capped(&s, &["p"], Some(2));
+    assert!(g2.sets.iter().all(|x| x.moves.len() == 2) && !g2.sets.is_empty());
+    assert!(g2.dropped.iter().any(|d| d.id == "left-turns" && d.reason.starts_with(bansets::OVER_CAP)));
+}
+
+#[test]
+fn top_sets_come_from_the_single_candidates_order_and_only_with_a_cap() {
+    let s = study_of(mini(vec![]));
+    let ranked = interleaved(&s);
+    assert_eq!(ranked.len(), 6);
+    let hot = hot_for(&s, &ranked);
+    let mut p = Params::new("t");
+    p.periods = vec!["p".into()];
+    p.ban_sets = true;
+    let without = generate_search(&s, &hot, &p);
+    assert!(without.iter().all(|c| !c.key.starts_with("bs:top-")), "no cap, no top sets");
+    p.max_turn_bans = Some(4);
+    let with = generate_search(&s, &hot, &p);
+    let singles: Vec<(u32, u32)> = with.iter().filter(|c| c.kind == "turn_ban").map(|c| (c.iv.from_link.unwrap(), c.iv.to_link.unwrap())).collect();
+    assert_eq!(singles, ranked, "the single turn-ban candidates are in rank order");
+    assert!(with.iter().filter(|c| c.kind == "ban_set").all(|c| bansets::ban_count(std::slice::from_ref(&c.iv)) <= 4));
+    for k in 2..=4usize {
+        let c = with.iter().find(|c| c.key == format!("bs:top-{k}")).unwrap_or_else(|| panic!("top-{k} missing"));
+        let mut want: Vec<(u32, u32)> = ranked[..k].to_vec();
+        want.sort_unstable();
+        assert_eq!(bansets::pairs(&c.iv), want);
+    }
+    assert!(!with.iter().any(|c| c.key == "bs:top-5"), "no top set above the cap");
+    p.max_turn_bans = Some(3);
+    assert!(!generate_search(&s, &hot, &p).iter().any(|c| c.key == "bs:top-4"));
+}
+
+#[test]
+fn a_package_over_the_cap_is_never_adopted_or_simulated() {
+    use traffic_sim::explore::search::{eval_batch, run_baseline, Ctx, SearchState};
+    let s = study_of(mini(vec![]));
+    let mut p = Params::new("t");
+    p.periods = vec!["p".into()];
+    p.seeds = vec![1, 2];
+    p.screen_minutes = 3.0;
+    p.minutes = 3.0;
+    p.jobs = 2;
+    p.ban_sets = true;
+    let base = run_baseline(&s, &p);
+    let cands = generate_search(&s, &base.hot, &p);
+    let at = |k: &str| cands.iter().position(|c| c.key == k).unwrap() as u16;
+    let left = at("bs:left-turns");
+    let onto = cands.iter().position(|c| c.key.starts_with("bs:onto-ash")).unwrap() as u16;
+    let singles = bansets::flatten(&[cands[left as usize].iv.clone()]).into_owned();
+    assert_eq!(singles.len(), 3);
+    let mut both = vec![left, onto];
+    both.sort_unstable();
+
+    // without a cap a package of both sets is screened; with a cap of 3 only the single set is
+    let mut st = SearchState::new();
+    eval_batch(&Ctx { study: &s, p: &p, cands: &cands, base: &base }, &mut st, vec![both.clone()]);
+    assert!(st.evals[0].valid() && st.used == 1, "{:?}", st.evals[0].reject);
+    p.max_turn_bans = Some(3);
+    let ctx = Ctx { study: &s, p: &p, cands: &cands, base: &base };
+    let mut st = SearchState::new();
+    eval_batch(&ctx, &mut st, vec![both.clone(), vec![left]]);
+    let over = &st.evals[st.cache[&both]];
+    assert!(over.reject.as_deref().unwrap().starts_with(bansets::OVER_CAP), "{:?}", over.reject);
+    assert!(st.evals[st.cache[&vec![left]]].valid());
+    assert_eq!(st.used, 1, "the package over the cap is not simulated");
+
+    // known and hand packages: three bans fit a cap of 3, not a cap of 2, and the reason is the cap's even where the depth is smaller too
+    let mut c = cands.clone();
+    assert!(adopt_packages(&s, &p, &mut c, &[singles.clone()], "known package")[0].is_ok());
+    p.max_turn_bans = Some(2);
+    p.depth = 2;
+    let why = adopt_packages(&s, &p, &mut c, &[singles.clone()], "known package")[0].clone().unwrap_err();
+    assert!(why.starts_with(bansets::OVER_CAP), "{why}");
+    assert!(why.contains("3 individual turn bans") && why.contains("cap of 2"), "{why}");
+    p.max_turn_bans = None;
+    p.depth = 3;
+    assert!(adopt_packages(&s, &p, &mut c, &[singles], "known package")[0].is_ok(), "no cap, no effect");
+}
+
+#[test]
+fn the_cap_is_recorded_in_the_file_and_the_report_only_when_given() {
+    let s = study_of(mini(vec![]));
+    let mut p = Params::new("t");
+    p.periods = vec!["p".into()];
+    p.seeds = vec![1, 2];
+    p.screen_minutes = 3.0;
+    p.minutes = 3.0;
+    p.jobs = 2;
+    p.depth = 2;
+    p.finalists = 2;
+    p.ban_sets = true;
+    let plain = traffic_sim::explore::report::explore(&s, &p);
+    assert!(plain.json["computed"].get("turnBanCap").is_none());
+    assert!(!plain.markdown.contains("Turn-ban cap"));
+    p.max_turn_bans = Some(3);
+    let capped = traffic_sim::explore::report::explore(&s, &p);
+    let c = &capped.json["computed"]["turnBanCap"];
+    assert_eq!(c["max"], 3);
+    assert_eq!(c["knownPackagesSkipped"], 0);
+    assert!(c["rule"].as_str().unwrap().contains("ASSUMPTION"));
+    assert!(capped.markdown.contains("Turn-ban cap: a package holds at most 3 individual turn bans"), "{}", capped.markdown);
+    assert!(capped.cands.iter().all(|k| k.kind != "ban_set" || bansets::ban_count(std::slice::from_ref(&k.iv)) <= 3));
+}
