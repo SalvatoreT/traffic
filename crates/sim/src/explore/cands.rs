@@ -161,7 +161,12 @@ pub fn generate_search(study: &Study, hot: &Hotspots, p: &super::Params) -> Vec<
     let mut out = generate_for(study, hot, p.candidates, &p.profile, periods.iter().copied());
     if p.ban_sets {
         let wanted = |c: &Cand| !p.profile.exclude_types.iter().any(|t| t == "turn_ban" || t == "ban_set") && profile_allows(study, &p.profile, &c.iv);
-        out.extend(super::bansets::candidates(study, hot, &periods).into_iter().filter(wanted));
+        let mut g = super::bansets::generate_capped(study, &periods, p.max_turn_bans);
+        if let Some(cap) = p.max_turn_bans {
+            let ranked: Vec<(u32, u32)> = out.iter().filter(|c| c.kind == "turn_ban").filter_map(|c| c.iv.from_link.zip(c.iv.to_link)).collect();
+            g.add_top_sets(study, &ranked, &periods, cap);
+        }
+        out.extend(g.sets.iter().map(|s| s.cand(study, Some(hot))).filter(wanted));
     }
     out
 }

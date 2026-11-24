@@ -365,13 +365,19 @@ pub fn eval_batch(ctx: &Ctx, st: &mut SearchState, sets: Vec<Vec<u16>>) {
         }
     }
     let table = st.table.clone();
+    // A package over the turn-ban cap is never simulated or kept: it is rejected here, before the table or the access check is asked.
+    let over_cap = |s: &Vec<u16>| ctx.p.max_turn_bans.and_then(|m| super::bansets::over_cap_reason(super::bansets::ban_count(&ctx.ivs(s)), Some(m)));
     let checks: Vec<Result<(), String>> = match &table {
-        Some(t) => want.iter().map(|s| match t.rows.get(s) {
-            Some((e, false)) => Err(e.reject.clone().unwrap_or_default()),
-            Some((_, true)) => Ok(()),
-            None => panic!("the screening table has no row for package {s:?}"),
+        Some(t) => want.iter().map(|s| match (over_cap(s), t.rows.get(s)) {
+            (Some(why), _) => Err(why),
+            (None, Some((e, false))) => Err(e.reject.clone().unwrap_or_default()),
+            (None, Some((_, true))) => Ok(()),
+            (None, None) => panic!("the screening table has no row for package {s:?}"),
         }).collect(),
-        None => parallel_map(ctx.p.jobs, &want, |s| check_access_for(ctx.study, &ctx.ivs(s), ctx.p.periods.iter().map(String::as_str))),
+        None => parallel_map(ctx.p.jobs, &want, |s| match over_cap(s) {
+            Some(why) => Err(why),
+            None => check_access_for(ctx.study, &ctx.ivs(s), ctx.p.periods.iter().map(String::as_str)),
+        }),
     };
     let mut to_run: Vec<Vec<u16>> = Vec::new();
     let mut results: HashMap<Vec<u16>, Eval> = HashMap::new();

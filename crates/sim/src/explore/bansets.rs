@@ -15,6 +15,8 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 pub const TYPE: &str = "ban_set";
 pub const KIND: &str = "ban_set";
+/// First clause of the reason a package or set is left out for holding more turn bans than the cap allows.
+pub const OVER_CAP: &str = "over the turn-ban cap";
 const UNNAMED: &str = "Unnamed road";
 /// The turn classes of the app's `turnKindOf` (`src/lib/turnkind.ts`): a heading change under `STRAIGHT_DEG` is straight on, over `U_DEG` a U-turn.
 const STRAIGHT_DEG: f64 = 25.0;
@@ -393,6 +395,16 @@ fn keep_access(study: &Study, a: &Analysis, moves: Vec<usize>, periods: &[&str])
 /// left turns. A set holds the entry left and right turns only (straight-across movements stay open). A set with fewer than two bans is the
 /// single ban and is not a set; a set equal to an earlier one is merged into it; a set that strands a node is dropped with the reason.
 pub fn generate(study: &Study, periods: &[&str]) -> Generated {
+    generate_capped(study, periods, None)
+}
+
+/// Why a set of `bans` bans is not a candidate under `cap`, or `None` when it fits (or there is no cap).
+pub fn over_cap_reason(bans: usize, cap: Option<usize>) -> Option<String> {
+    cap.filter(|&c| bans > c).map(|c| format!("{OVER_CAP}: {bans} individual turn bans, more than the cap of {c}"))
+}
+
+/// `generate` with a cap on the bans of a set (`Params::max_turn_bans`): a set with more bans is dropped with the reason. `None` is `generate`.
+pub fn generate_capped(study: &Study, periods: &[&str], cap: Option<usize>) -> Generated {
     let a = analyze(study, periods);
     let mut out = Generated { entry_movements: a.movements.len(), usable: a.movements.iter().filter(|m| m.usable()).count(), ..Default::default() };
     let turns: Vec<usize> = (0..a.movements.len()).filter(|&i| a.movements[i].usable() && a.movements[i].turn != Turn::Straight).collect();
@@ -428,6 +440,10 @@ pub fn generate(study: &Study, periods: &[&str]) -> Generated {
             continue;
         }
         let lab = label(&study.net, &moves, onto.as_deref());
+        if let Some(reason) = over_cap_reason(moves.len(), cap) {
+            out.dropped.push(DroppedSet { id, label: lab, bans: moves.len(), reason });
+            continue;
+        }
         if let Some(first) = seen.get(&moves) {
             out.dropped.push(DroppedSet { id, label: lab, bans: moves.len(), reason: format!("same bans as {first}") });
             continue;
@@ -440,6 +456,31 @@ pub fn generate(study: &Study, periods: &[&str]) -> Generated {
         out.sets.push(Set { id, label: lab, moves, note });
     }
     out
+}
+
+impl Generated {
+    /// With a cap: the top-k sets for k from 2 to the cap, each the `k` highest-ranked movements of `ranked` (the search's single turn-ban candidates,
+    /// which the candidate list orders by the baseline cut-through trips that use them, as the `explore --check-singles` log does). A set the access
+    /// check refuses is dropped with the reason; one equal to a set already here is not added again. Not run without a cap.
+    pub fn add_top_sets(&mut self, study: &Study, ranked: &[(u32, u32)], periods: &[&str], cap: usize) {
+        for k in 2..=cap.min(ranked.len()) {
+            let moves: Vec<(u32, u32)> = ranked[..k].iter().copied().collect::<BTreeSet<_>>().into_iter().collect();
+            if moves.len() < 2 {
+                continue;
+            }
+            let id = format!("top-{k}");
+            let lab = label(&study.net, &moves, None);
+            if let Some(first) = self.sets.iter().find(|s| s.moves == moves) {
+                self.dropped.push(DroppedSet { id, label: lab, bans: moves.len(), reason: format!("same bans as {}", first.id) });
+                continue;
+            }
+            if let Err(reason) = check_access_for(study, &[set_iv(&moves)], periods.iter().copied()) {
+                self.dropped.push(DroppedSet { id, label: lab, bans: moves.len(), reason: format!("access check: {reason}") });
+                continue;
+            }
+            self.sets.push(Set { id, label: lab, moves, note: format!("the {k} turn-ban candidates with the most baseline cut-through") });
+        }
+    }
 }
 
 impl Set {

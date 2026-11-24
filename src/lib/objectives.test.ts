@@ -5,7 +5,7 @@ import { methodologyText } from './methodology';
 
 describe('objective tags', () => {
   it('lists the goals in a fixed order, whatever order the file wrote', () => {
-    expect(objectiveTags({ objectives: ['fewest-changes', 'most-removed'] })).toEqual(['most cut-through removed', 'fewest changes']);
+    expect(objectiveTags({ objectives: ['fewest-changes', 'most-removed'] })).toEqual(['best balance of cut-through removed and traffic added to one block', 'fewest changes']);
     expect(bestForText({ objectives: ['no-closures', 'least-detour'] })).toBe('Best for: no street closures, least detour for residents');
   });
   it('shows nothing for an option with no tag, and ignores an id it does not know', () => {
@@ -18,7 +18,7 @@ describe('objective tags', () => {
     expect(objectiveTags({ objectives, simulationProblem: 'excess backlog' })).toEqual([]);
     expect(objectiveTags({ objectives, accessProblem: 'stranded resident' })).toEqual([]);
     const residentsDetour = { method: 'requested-elapsed-to-cutoff' as const, secondsPerTrip: null, effect: null, vehicleMinutesPerHour: null };
-    expect(objectiveTags({ objectives, residentsDetour })).toEqual(['most cut-through removed']);
+    expect(objectiveTags({ objectives, residentsDetour })).toEqual(['best balance of cut-through removed and traffic added to one block']);
   });
   it('reads a file written before objectives as options with no tags and no detour', () => {
     const file = parseProposals(readFileSync(new URL('../fixtures/explore-v5-sample.json', import.meta.url), 'utf8'));

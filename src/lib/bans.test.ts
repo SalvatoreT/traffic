@@ -62,16 +62,24 @@ describe('the card text for turn bans', () => {
   const set = [{ type: 'ban_set', label: 'No turns (41 turns)', bans: 41 }, { type: 'one_way', label: 'One-way' }];
   it('says the scale in the visible part and carries the standing caveat', () => {
     const h = banHeadline({ interventions: set, turnBans: 41 })!;
-    expect(h.text).toBe('41 turn restrictions around the edge of the area');
+    expect(h.text).toBe('41 turn restrictions at entrances to the area');
     expect(h.caveat).toBe(BAN_CAVEAT);
     expect(BAN_CAVEAT).toMatch(/every driver, residents included, all day/);
     expect(BAN_CAVEAT).toMatch(/full compliance/);
+  });
+  it('reads right for a handful of signs: a small ban set and a single ban together', () => {
+    const few = [{ type: 'ban_set', label: 'No turns (3 turns)', bans: 3 }, { type: 'turn_ban', label: 'a' }, { type: 'modal_filter', label: 'f' }];
+    const h = banHeadline({ interventions: few, turnBans: 4 })!;
+    expect(h.count).toBe(4);
+    expect(h.text).toBe('4 turn restrictions at entrances to the area');
+    expect(h.text).not.toMatch(/edge|around|perimeter/);
+    expect(h.caveat).toBe(BAN_CAVEAT);
   });
   it('counts single bans and shows nothing for a package without any', () => {
     const singles = [{ type: 'turn_ban', label: 'a' }, { type: 'turn_ban', label: 'b' }];
     expect(banCount({ interventions: singles })).toBe(2);
     expect(banHeadline({ interventions: [{ type: 'modal_filter', label: 'f' }] })).toBeNull();
-    expect(banHeadline({ interventions: [{ type: 'turn_ban', label: 'a' }] })!.text).toBe('1 turn restriction around the edge of the area');
+    expect(banHeadline({ interventions: [{ type: 'turn_ban', label: 'a' }] })!.text).toBe('1 turn restriction at entrances to the area');
   });
   it('promotes the resident detour with its unit, and says so when it is unavailable', () => {
     const d = { method: 'requested-elapsed-to-cutoff', secondsPerTrip: 27.4, vehicleMinutesPerHour: 100, effect: { n: 10, mean: 27.4, sd: 1, half: 1 } } as never;
@@ -80,7 +88,7 @@ describe('the card text for turn bans', () => {
     expect(detourHeadline({ method: 'requested-elapsed-to-cutoff', secondsPerTrip: null } as never)!.figure).toBe('unavailable');
   });
   it('names the no-turn-restrictions objective after the others', () => {
-    expect(objectiveTags({ objectives: ['no-turn-bans', 'most-removed'] })).toEqual(['most cut-through removed', 'no turn restrictions']);
+    expect(objectiveTags({ objectives: ['no-turn-bans', 'most-removed'] })).toEqual(['best balance of cut-through removed and traffic added to one block', 'no turn restrictions']);
     expect(objectiveTags({ objectives: ['most-removed-no-turn-bans', 'no-turn-bans'] })).toEqual(['no turn restrictions', 'most cut-through removed without turn restrictions']);
   });
 });

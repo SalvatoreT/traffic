@@ -96,6 +96,9 @@ pub struct Params {
     pub supplement: Vec<supplement::Move>,
     /// Ban sets (`bansets`) join the candidates, each counting as one intervention. Off by default: the candidate list and every output are then unchanged.
     pub ban_sets: bool,
+    /// Most individual turn bans a package may hold (a ban set counts its size, a single turn ban one). A presentation and feasibility limit, an ASSUMPTION of
+    /// the project lead (change `cap-turn-bans`). `None` is no limit, and then nothing in the search or its outputs changes.
+    pub max_turn_bans: Option<usize>,
     pub out: Option<PathBuf>,
     pub report: Option<PathBuf>,
 }
@@ -128,6 +131,7 @@ impl Params {
             bypass_locations: 0,
             supplement: Vec::new(),
             ban_sets: false,
+            max_turn_bans: None,
             out: None,
             report: None,
         }

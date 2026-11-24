@@ -15,7 +15,8 @@ fn usage(msg: &str) -> ! {
          \x20              [--confirm-seeds 101-110] [--no-confirm]   (defaults: --seeds 1-3 --confirm-seeds 101-110; seeds accept lists or ranges: 1-10)\n\
          \x20              [--screen-minutes 30] [--minutes 60] [--budget-evals N] [--jobs N] [--harm-weight 0.1] [--expand 16]\n\
          \x20              [--bypass-locations N] [--supplement delete|swap|coordinated|all]   (experimental, off by default)\n\
-         \x20              [--finalists 12] [--options 6] [--objectives all|most-removed,no-closures,least-detour,fewest-changes,no-turn-bans,most-removed-no-turn-bans] [--out public/data/ID.proposals.json] [--report data/proposals/ID.md]\n\
+         \x20              [--finalists 12] [--options 6] [--ban-sets] [--max-turn-bans N]   ban sets as candidates; with N no package holds more than N individual turn bans\n\
+         \x20              [--objectives all|most-removed,no-closures,least-detour,fewest-changes,no-turn-bans,most-removed-no-turn-bans] [--out public/data/ID.proposals.json] [--report data/proposals/ID.md]\n\
          \x20              [--references data/proposals/ID.references.json] [--profile ID[,ID...]|all] [--profiles FILE]   (optional limits; none are published) [--no-warm-start]\n\
          \x20              [--known data/proposals/ID.seeds.json] [--no-known]   known packages to recheck and start from (each run adds its published options)\n\
          \x20              [--check LINK ...] [--check-subsets] [--check-singles]   score given scenario links, or with --check-singles every candidate alone, by the search's own code, then print and exit (nothing is written)\n\
@@ -68,7 +69,7 @@ fn reapply_displacement(path: &Path, report: &Path) {
 fn write_ban_sets(study: &Study, p: &Params, path: &Path) {
     use traffic_sim::explore::bansets;
     let periods: Vec<&str> = p.periods.iter().map(String::as_str).collect();
-    let g = bansets::generate(study, &periods);
+    let g = bansets::generate_capped(study, &periods, p.max_turn_bans);
     let a = bansets::analyze(study, &periods);
     let name = |l: u32| study.idx.link_name[l as usize].clone();
     let sets: Vec<serde_json::Value> = g.sets.iter().map(|s| serde_json::json!({"id": s.id, "label": s.label, "bans": s.moves.len(), "note": s.note, "moves": s.moves, "link": study.encode(&[bansets::set_iv(&s.moves)], None)})).collect();
@@ -175,6 +176,7 @@ fn main() {
             "--supplement" => p.supplement = traffic_sim::explore::supplement::Move::parse(&v).unwrap_or_else(|| usage("--supplement is delete, swap, coordinated or all")),
             "--jobs" => p.jobs = (num("--jobs") as usize).max(1),
             "--harm-weight" => p.harm_weight = num("--harm-weight"),
+            "--max-turn-bans" => p.max_turn_bans = Some(num("--max-turn-bans") as usize),
             "--expand" => p.expand = num("--expand") as usize,
             "--finalists" => p.finalists = num("--finalists") as usize,
             "--options" => p.options = num("--options") as usize,
@@ -330,7 +332,7 @@ fn main() {
         }
         let known_file = known_path.clone().unwrap_or_else(|| root.join(format!("data/proposals/{}.seeds.json", p.area)));
         let mut seed_file = if no_known { seeds::SeedFile::empty(&p.area) } else { seeds::load(&known_file, &p.area).unwrap_or_else(|e| usage(&e)) };
-        let ban_sets = if p.ban_sets { traffic_sim::explore::bansets::generate(&study, &p.periods.iter().map(String::as_str).collect::<Vec<_>>()).sets } else { Vec::new() };
+        let ban_sets = if p.ban_sets { traffic_sim::explore::bansets::generate_capped(&study, &p.periods.iter().map(String::as_str).collect::<Vec<_>>(), p.max_turn_bans).sets } else { Vec::new() };
         let (known, dropped) = seeds::prepare_with(&study, &seed_file, &ban_sets);
         p.known = known;
         p.known_dropped = dropped;

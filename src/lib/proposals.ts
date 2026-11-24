@@ -703,7 +703,7 @@ export const allProposals = (file: Proposals): Proposal[] => file.groups.flatMap
 
 /** The goals an option can be the best for, in the order a card lists them. */
 export const OBJECTIVE_LABELS: Record<string, string> = {
-  'most-removed': 'most cut-through removed',
+  'most-removed': 'best balance of cut-through removed and traffic added to one block',
   'no-closures': 'no street closures',
   'least-detour': 'least detour for residents',
   'fewest-changes': 'fewest changes',
@@ -752,10 +752,10 @@ export function banCount(p: Pick<Proposal, 'interventions' | 'turnBans'>): numbe
 /** The standing caveat shown wherever a package with turn bans has its headline. */
 export const BAN_CAVEAT = 'Turn bans apply to every driver, residents included, all day, and assume full compliance.';
 
-/** The scale line of a package with turn bans, so it cannot be read as a small change: "41 turn restrictions around the edge of the area". Null for a package without any. */
+/** The scale line of a package with turn bans, so it cannot be read as a small change: "41 turn restrictions at entrances to the area", "3 turn restrictions at entrances to the area". Null for a package without any. */
 export function banHeadline(p: Pick<Proposal, 'interventions' | 'turnBans'>): { count: number; text: string; caveat: string } | null {
   const count = banCount(p);
-  return count > 0 ? { count, text: `${count} turn ${count === 1 ? 'restriction' : 'restrictions'} around the edge of the area`, caveat: BAN_CAVEAT } : null;
+  return count > 0 ? { count, text: `${count} turn ${count === 1 ? 'restriction' : 'restrictions'} at entrances to the area`, caveat: BAN_CAVEAT } : null;
 }
 
 /** The resident detour for the visible part of every card: "Resident detour: +16.0 s per requested resident trip". Null when the file recorded none. */

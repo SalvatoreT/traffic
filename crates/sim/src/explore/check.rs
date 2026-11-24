@@ -19,7 +19,7 @@ pub fn check_links(study: &Study, p: &Params, links: &[String], subsets: bool, s
         println!("  candidate {} [{}] {}", i + 1, c.kind, c.label);
     }
     let mut sets: Vec<Vec<u16>> = Vec::new();
-    let ban_sets = if p.ban_sets { super::bansets::generate(study, &p.periods.iter().map(String::as_str).collect::<Vec<_>>()).sets } else { Vec::new() };
+    let ban_sets = if p.ban_sets { super::bansets::generate_capped(study, &p.periods.iter().map(String::as_str).collect::<Vec<_>>(), p.max_turn_bans).sets } else { Vec::new() };
     for link in links {
         let ivs = match decode_scenario(&study.net, &study.topo, study.origin, link).map(|v| super::bansets::collapse(&ban_sets, v)) {
             Ok(v) => v,

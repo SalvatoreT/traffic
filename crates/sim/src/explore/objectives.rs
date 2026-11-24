@@ -64,7 +64,7 @@ impl Objective {
     /// The phrase after "Best for: " on a card.
     pub fn label(self) -> &'static str {
         match self {
-            Objective::MostRemoved => "most cut-through removed",
+            Objective::MostRemoved => "best balance of cut-through removed and traffic added to one block",
             Objective::NoClosures => "no street closures",
             Objective::LeastDetour => "least detour for residents",
             Objective::FewestChanges => "fewest changes",

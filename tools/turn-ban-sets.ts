@@ -1,10 +1,10 @@
 // Entry movements and named turn-ban packages for the perimeter-turn-bans experiment (openspec/changes/archive/2026-11-22-perimeter-turn-bans).
-//   npx tsx tools/turn-ban-sets.ts [--area rockridge] [--data public/data] [--out target/turn-bans] [--period pm_peak] [--ranked singles.log]
+//   npx tsx tools/turn-ban-sets.ts [--area rockridge] [--data public/data] [--out target/turn-bans] [--period pm_peak] [--ranked singles.log] [--max-bans N]
 // Reads the area's network, writes <out>/packages.json, packages.md and packages.tsv (id, bans, link). Runs nothing and sends nothing.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { loadAreaFiles, repoRoot } from './lib/agent-area';
-import { analyze, buildPackages, countBy, packageLink, parseSinglesLog, rankFromLinks, type Analysis, type Package, type PackageLink } from './lib/turn-ban-sets';
+import { analyze, buildPackages, countBy, packageLink, parseSinglesLog, rankFromLinks, topKUnder, type Analysis, type Package, type PackageLink } from './lib/turn-ban-sets';
 
 function arg(name: string, fallback: string): string {
   const i = process.argv.indexOf(`--${name}`);
@@ -37,6 +37,9 @@ async function main() {
   const out = resolve(arg('out', join(repoRoot, 'target/turn-bans')));
   const period = arg('period', 'pm_peak');
   const rankedFile = arg('ranked', '');
+  const maxBansArg = arg('max-bans', '');
+  const maxBans = maxBansArg === '' ? undefined : Number(maxBansArg);
+  if (maxBans !== undefined && !(Number.isInteger(maxBans) && maxBans >= 1)) throw new Error('--max-bans needs a whole number of at least 1');
   const files = await loadAreaFiles(data, area);
   const net = files.network;
   const a = analyze(net, period);
@@ -49,7 +52,8 @@ async function main() {
   } else {
     note.push('No top-k packages: they need the ranked turn-ban candidates from `explore --check-singles` (pass `--ranked FILE`); the proposal report lists the candidates by name only.');
   }
-  const pk = buildPackages(a, ranked, undefined, { net, period });
+  if (maxBans !== undefined) note.push(`Capped at ${maxBans} individual turn bans a package (\`--max-bans\`): larger packages are left out, and the top-k packages run from 2 to ${maxBans}.`);
+  const pk = buildPackages(a, ranked, maxBans === undefined ? undefined : topKUnder(maxBans), { net, period }, maxBans);
   const rows = pk.map((p) => ({ p, l: packageLink(net, p, period) }));
   for (const { p, l } of rows) if (!l.roundTrip) console.error(`warning: ${p.id}: ${l.problem}`);
   mkdirSync(out, { recursive: true });

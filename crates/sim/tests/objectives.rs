@@ -102,7 +102,7 @@ fn winners_by_objective_and_tags_on_one_option() {
     assert_eq!(by(0), Some(vec!["most-removed", "fewest-changes"]), "a package that wins two objectives is listed once with both tags");
     assert_eq!(by(1), Some(vec!["no-closures", "least-detour"]));
     assert!(picks.iter().filter(|pk| pk.idx == 0).count() == 1);
-    assert!(notes[0].starts_with("chosen as option") && notes[0].contains("most cut-through removed and fewest changes"), "{}", notes[0]);
+    assert!(notes[0].starts_with("chosen as option") && notes[0].contains("best balance of cut-through removed and traffic added to one block and fewest changes"), "{}", notes[0]);
     // The list stays one list, most through cars removed first.
     let removed: Vec<f64> = picks.iter().map(|pk| f[pk.idx].reduction_pct).collect();
     assert!(removed.windows(2).all(|w| w[0] >= w[1]), "{removed:?}");

@@ -232,8 +232,18 @@ export const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').r
 
 export interface RankedMovement { fromLink: number; toLink: number; rank: number }
 
-/** The packages, each as a set of movements that exist, are not banned in the base network and survive a link round trip. */
-export function buildPackages(a: Analysis, ranked: RankedMovement[] = [], topK: number[] = [3, 5, 10], access?: { net: Network; period?: string }): Package[] {
+/** Per bounding street, how many of its top-ranked movements make a package when a cap is set (`--max-bans`). */
+export const STREET_TOP_K = 3;
+
+/** The top-k sizes a cap allows: 2 up to the cap (one ban is a single turn ban, not a set). */
+export const topKUnder = (maxBans: number): number[] => Array.from({ length: Math.max(0, maxBans - 1) }, (_, i) => i + 2);
+
+/**
+ * The packages, each as a set of movements that exist, are not banned in the base network and survive a link round trip. With `maxBans` (the
+ * cap on individual turn bans in a package, change `cap-turn-bans`) a package with more bans is left out, and each bounding street also gets a
+ * `street-<name>-top-3` package of its three highest-ranked movements; the ranking is always the caller's (the `explore --check-singles` log).
+ */
+export function buildPackages(a: Analysis, ranked: RankedMovement[] = [], topK: number[] = [3, 5, 10], access?: { net: Network; period?: string }, maxBans?: number): Package[] {
   const ok = a.movements.filter(usable);
   const pk: Package[] = [];
   const add = (id: string, title: string, note: string, ms: EntryMovement[]) => { if (ms.length > 0) pk.push({ id, title, note, movements: ms }); };
@@ -257,7 +267,16 @@ export function buildPackages(a: Analysis, ranked: RankedMovement[] = [], topK: 
   const byKey = new Map(ok.map((m) => [`${m.fromLink}-${m.toLink}`, m]));
   const order = ranked.filter((r) => byKey.has(`${r.fromLink}-${r.toLink}`)).sort((p, q) => p.rank - q.rank).map((r) => byKey.get(`${r.fromLink}-${r.toLink}`)!);
   for (const k of topK) if (order.length >= k) add(`top-${k}`, `The ${k} entry movements with the most baseline cut-through`, 'Ranked by the search candidate list, which orders turn-ban candidates by the baseline cut-through trips that use them.', order.slice(0, k));
-  return pk;
+  if (maxBans === undefined) return pk;
+  const sig = (ms: EntryMovement[]) => ms.map((m) => `${m.fromLink}-${m.toLink}`).sort().join(',');
+  const seen = new Set(pk.map((p) => sig(p.movements)));
+  for (const n of names) {
+    const top = order.filter((m) => m.boundingStreet === n).slice(0, STREET_TOP_K);
+    if (top.length < STREET_TOP_K || top.length > maxBans || seen.has(sig(top))) continue;
+    add(`street-${slug(n)}-top-${STREET_TOP_K}`, `The ${STREET_TOP_K} entry movements from ${n} with the most baseline cut-through`, `The ${STREET_TOP_K} highest-ranked movements that start on ${n}, in the ranking of the search candidate list.`, top);
+    seen.add(sig(top));
+  }
+  return pk.filter((p) => p.movements.length <= maxBans);
 }
 
 export interface PackageLink { link: string; items: number; roundTrip: boolean; problem?: string }

@@ -1202,6 +1202,28 @@ pub fn similar_out(ctx: &Ctx, finals: &[Final], picks: &[Pick], folds: &[similar
     SimilarOut { variants, folded, dropped: Vec::new() }
 }
 
+/// Ban sets left out of the candidates for holding more bans than the cap.
+fn sets_over_cap(study: &Study, p: &Params) -> Vec<super::bansets::DroppedSet> {
+    let Some(cap) = p.max_turn_bans.filter(|_| p.ban_sets) else { return Vec::new() };
+    let periods: Vec<&str> = p.periods.iter().map(String::as_str).collect();
+    super::bansets::generate_capped(study, &periods, Some(cap)).dropped.into_iter().filter(|d| d.reason.starts_with(super::bansets::OVER_CAP)).collect()
+}
+
+fn known_over_cap(known: &KnownSummary) -> usize {
+    known.dropped.iter().filter(|d| d.reason.starts_with(super::bansets::OVER_CAP)).count()
+}
+
+/// The `computed.turnBanCap` record: the cap, what it left out and the rule. Absent when the search had no cap, so a run without it writes the same file as before.
+fn turn_ban_cap_json(study: &Study, p: &Params, known: &KnownSummary) -> Option<Value> {
+    let cap = p.max_turn_bans?;
+    Some(json!({
+        "max": cap,
+        "rule": "A package holds at most `max` individual turn bans: each ban set counts its size and each single turn ban counts 1. A ban set with more bans is not a candidate, the search never simulates or keeps a package over the cap, and a known or hand-added package over it is skipped and not rechecked. ASSUMPTION: the cap is a presentation and feasibility limit chosen by the project lead, not a result of the model.",
+        "setsDropped": sets_over_cap(study, p).iter().map(|d| json!({"id": d.id, "bans": d.bans})).collect::<Vec<_>>(),
+        "knownPackagesSkipped": known_over_cap(known),
+    }))
+}
+
 /// What the run did with the seeds file.
 #[derive(Clone, Debug, Default)]
 pub struct KnownSummary {
@@ -1413,6 +1435,10 @@ pub fn adopt_packages(study: &Study, p: &Params, cands: &mut Vec<Cand>, pkgs: &[
         };
         if let Some(iv) = pkg.iter().find(|iv| !profile_allows(study, &p.profile, iv)) {
             fail(format!("{} is not allowed under {}", describe(&study.net, &study.topo, &study.idx, iv), p.profile.id));
+            continue;
+        }
+        if let Some(why) = super::bansets::over_cap_reason(super::bansets::ban_count(pkg), p.max_turn_bans) {
+            fail(why);
             continue;
         }
         if pkg.len() > p.depth {
@@ -1695,6 +1721,9 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, sh
             "droppedPackages": known.dropped.iter().map(|d| json!({"link": d.link, "reason": d.reason})).collect::<Vec<_>>(),
         },
     });
+    if let Some(cap) = turn_ban_cap_json(study, p, known) {
+        computed["turnBanCap"] = cap;
+    }
     computed["objectives"] = json!({
         "list": p.objectives.iter().map(|o| json!({"id": o.id(), "label": o.label(), "rule": o.rule()})).collect::<Vec<_>>(),
         "detourReductionFloor": DETOUR_REDUCTION_FLOOR,
@@ -1790,6 +1819,13 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
     }
     let _ = writeln!(md, "\n## Search\n");
     let _ = writeln!(md, "Beam {}, depth {}, expand {}, harm weight {} points of reduction per car an hour of increase in all traffic on one block (the search ranks on all traffic, because residents experience all of it), {} screening runs simulated{}.\n", p.beam, p.depth, p.expand, p.harm_weight, state.used, p.budget_evals.map(|b| format!(" (budget {b})")).unwrap_or_default());
+    if let Some(cap) = p.max_turn_bans {
+        let _ = writeln!(md, "Turn-ban cap: a package holds at most {cap} individual turn bans (a ban set counts its size, a single turn ban counts 1). ASSUMPTION: a presentation and feasibility limit chosen by the project lead.\n");
+        for d in sets_over_cap(study, p) {
+            let _ = writeln!(md, "- Ban set not a candidate: {} ({} bans): {}", d.label, d.bans, d.reason);
+        }
+        let _ = writeln!(md, "- {} known package(s) skipped for holding more than {cap} turn bans.\n", known_over_cap(known));
+    }
     for l in &state.log {
         let _ = writeln!(md, "- {l}");
     }
